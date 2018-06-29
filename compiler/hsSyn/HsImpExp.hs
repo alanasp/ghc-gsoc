@@ -20,7 +20,8 @@ import GhcPrelude
 import Module           ( ModuleName )
 import HsDoc            ( HsDocString )
 import OccName          ( HasOccName(..), isTcOcc, isSymOcc )
-import BasicTypes       ( SourceText(..), StringLiteral(..), pprWithSourceText )
+import BasicTypes       ( SourceText(..), StringLiteral(..), pprWithSourceText, 
+                          WarningTxt(..) )
 import FieldLabel       ( FieldLbl(..) )
 
 import Outputable
@@ -226,6 +227,21 @@ data IE pass
   | IEDoc               (XIEDoc pass) HsDocString       -- ^ Some documentation
   | IEDocNamed          (XIEDocNamed pass) String    -- ^ Reference to named doc
   | XIE (XXIE pass)
+  | IEVarDeprecated     WarningTxt (XIEVar pass) (LIEWrappedName (IdP pass))
+        -- ^ Deprecated Imported or Exported Variable
+
+  | IEThingAbsDeprecated  WarningTxt (XIEThingAbs pass) (LIEWrappedName (IdP pass))
+        -- ^ Deprecated Imported or exported Thing with Absent list
+  | IEThingAllDeprecated  WarningTxt (XIEThingAll pass) (LIEWrappedName (IdP pass))
+        -- ^ Deprecated Imported or exported Thing with All imported or exported
+  | IEThingWithDeprecated  WarningTxt (XIEThingWith pass)
+                (LIEWrappedName (IdP pass))
+                IEWildcard
+                [LIEWrappedName (IdP pass)]
+                [Located (FieldLbl (IdP pass))]
+        -- ^ Deprecated Imported or exported Thing With given imported or exported
+  | IEModuleContentsDeprecated WarningTxt (XIEModuleContents pass) (Located ModuleName)
+        -- ^ Deprecated Imported or exported module contents
 
 type instance XIEVar             (GhcPass _) = NoExt
 type instance XIEThingAbs        (GhcPass _) = NoExt
@@ -262,6 +278,10 @@ ieName (IEVar _ (L _ n))              = ieWrappedName n
 ieName (IEThingAbs  _ (L _ n))        = ieWrappedName n
 ieName (IEThingWith _ (L _ n) _ _ _)  = ieWrappedName n
 ieName (IEThingAll  _ (L _ n))        = ieWrappedName n
+ieName (IEVarDeprecated _ _ (L _ n))              = ieWrappedName n
+ieName (IEThingAbsDeprecated _ _ (L _ n))         = ieWrappedName n
+ieName (IEThingWithDeprecated _ _ (L _ n) _ _ _)  = ieWrappedName n
+ieName (IEThingAllDeprecated _ _ (L _ n))         = ieWrappedName n
 ieName _ = panic "ieName failed pattern match!"
 
 ieNames :: IE pass -> [IdP pass]
@@ -270,7 +290,13 @@ ieNames (IEThingAbs  _ (L _ n)   )     = [ieWrappedName n]
 ieNames (IEThingAll  _ (L _ n)   )     = [ieWrappedName n]
 ieNames (IEThingWith _ (L _ n) _ ns _) = ieWrappedName n
                                        : map (ieWrappedName . unLoc) ns
+ieNames (IEVarDeprecated       _ _ (L _ n)   )     = [ieWrappedName n]
+ieNames (IEThingAbsDeprecated  _ _ (L _ n)   )     = [ieWrappedName n]
+ieNames (IEThingAllDeprecated  _ _ (L _ n)   )     = [ieWrappedName n]
+ieNames (IEThingWithDeprecated _ _ (L _ n) _ ns _) = ieWrappedName n
+                                     : map (ieWrappedName . unLoc) ns
 ieNames (IEModuleContents {})     = []
+ieNames (IEModuleContentsDeprecated {})     = []
 ieNames (IEGroup          {})     = []
 ieNames (IEDoc            {})     = []
 ieNames (IEDocNamed       {})     = []

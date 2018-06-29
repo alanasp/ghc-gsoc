@@ -865,6 +865,18 @@ export  :: { OrdList (LIE GhcPs) }
                                              [mj AnnModule $1] }
         |  'pattern' qcon            {% amsu (sLL $1 $> (IEVar noExt (sLL $1 $> (IEPattern $2))))
                                              [mj AnnPattern $1] }
+        |  deprWarning qcname_ext export_subspec  {% mkModuleImpExpDeprecated $1 $2 (snd $ unLoc $3)
+                                         >>= \ie -> amsu (sLL $2 $> ie) (fst $ unLoc $3) }
+        |  deprWarning 'module' modid
+                    {% amsu (sLL $2 $> (IEModuleContentsDeprecated $1 noExt $3))
+                                            [mj AnnModule $2] }
+        |  deprWarning 'pattern' qcon
+                  {% amsu (sLL $2 $> (IEVarDeprecated $1 noExt (sLL $2 $> (IEPattern $3))))
+                                            [mj AnnPattern $2] }
+
+deprWarning  :: { WarningTxt }
+        : '{-# DEPRECATED' STRING '#-}' { DeprecatedTxt ( noLoc NoSourceText )
+                                       [sL1 $2 $ StringLiteral (NoSourceText) (getSTRING $2)] }
 
 export_subspec :: { Located ([AddAnn],ImpExpSubSpec) }
         : {- empty -}             { sL0 ([],ImpExpAbs) }
