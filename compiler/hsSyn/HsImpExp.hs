@@ -20,7 +20,7 @@ import GhcPrelude
 import Module           ( ModuleName )
 import HsDoc            ( HsDocString )
 import OccName          ( HasOccName(..), isTcOcc, isSymOcc )
-import BasicTypes       ( SourceText(..), StringLiteral(..), pprWithSourceText, 
+import BasicTypes       ( SourceText(..), StringLiteral(..), pprWithSourceText,
                           WarningTxt(..) )
 import FieldLabel       ( FieldLbl(..) )
 
@@ -335,6 +335,23 @@ instance (p ~ GhcPass pass,OutputableBndrId p) => Outputable (IE p) where
                 let (bs, as) = splitAt pos (map (ppr . unLoc) withs)
                 in bs ++ [text ".."] ++ as
     ppr (IEModuleContents _ mod')
+        = text "module" <+> ppr mod'
+    ppr (IEVarDeprecated       _ _     var) = ppr (unLoc var)
+    ppr (IEThingAbsDeprecated  _ _   thing) = ppr (unLoc thing)
+    ppr (IEThingAllDeprecated  _ _   thing) = hcat [ppr (unLoc thing), text "(..)"]
+    ppr (IEThingWithDeprecated _ _ thing wc withs flds)
+        = ppr (unLoc thing) <> parens (fsep (punctuate comma
+                                              (ppWiths ++
+                                              map (ppr . flLabel . unLoc) flds)))
+      where
+        ppWiths =
+          case wc of
+              NoIEWildcard ->
+                map (ppr . unLoc) withs
+              IEWildcard pos ->
+                let (bs, as) = splitAt pos (map (ppr . unLoc) withs)
+                in bs ++ [text ".."] ++ as
+    ppr (IEModuleContentsDeprecated _ _ mod')
         = text "module" <+> ppr mod'
     ppr (IEGroup _ n _)           = text ("<IEGroup: " ++ show n ++ ">")
     ppr (IEDoc _ doc)             = ppr doc

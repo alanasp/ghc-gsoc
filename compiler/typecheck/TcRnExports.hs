@@ -152,15 +152,35 @@ tcRnExports explicit_mod exports
 
         ; traceRn "rnExports: Exports:" (ppr final_avails)
 
+        ; let export_deprecation_warns = get_export_depr_warns exports
+
         ; let new_tcg_env =
                   tcg_env { tcg_exports    = final_avails,
                              tcg_rn_exports = case tcg_rn_exports tcg_env of
                                                 Nothing -> Nothing
                                                 Just _  -> rn_exports,
                             tcg_dus = tcg_dus tcg_env `plusDU`
-                                      usesOnly final_ns }
+                                      usesOnly final_ns,
+                            tcg_warns = tcg_warns tcg_env `plusWarns` export_deprecation_warns }
         ; failIfErrsM
         ; return new_tcg_env }
+
+
+get_export_depr_warns :: Maybe (Located [LIE GhcPs]) -> Warnings
+get_export_depr_warns Nothing = NoWarnings
+get_export_depr_warns (Just (L _ [])) = NoWarnings
+get_export_depr_warns (Just (L x (lie:lie_tail))) =
+  (get_lie_depr_warns lie) `plusWarns` (get_export_depr_warns (Just (L x lie_tail)))
+
+
+get_lie_depr_warns :: LIE GhcPs -> Warnings
+get_lie_depr_warns (L _ ie@(IEVarDeprecated             wtxt _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+get_lie_depr_warns (L _ ie@(IEThingAbsDeprecated        wtxt _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+get_lie_depr_warns (L _ ie@(IEThingAllDeprecated        wtxt _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+get_lie_depr_warns (L _ ie@(IEThingWithDeprecated wtxt _ _ _ _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+--get_lie_depr_warns (L _ ie@(IEModuleContentsDeprecated  wtxt _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+get_lie_depr_warns _                                               = NoWarnings
+
 
 exports_from_avail :: Maybe (Located [LIE GhcPs])
                          -- Nothing => no explicit export list
@@ -264,6 +284,46 @@ exports_from_avail (Just (L _ rdr_items)) rdr_env imports this_mod
              ; return (ExportAccum (((L loc (IEModuleContents noExt (L lm mod)))
                                     , new_exports) : ie_avails) occs') }
 
+    exports_from_item acc@(ExportAccum ie_avails occs)
+                      (L loc ie@(IEModuleContentsDeprecated wtxt _ (L lm mod)))
+        | let earlier_mods
+                = [ mod
+                  | ((L _ (IEModuleContentsDeprecated _ _ (L _ mod))), _) <- ie_avails ]
+        , mod `elem` earlier_mods    -- Duplicate export of M
+        = do { warnIfFlag Opt_WarnDuplicateExports True
+                          (dupModuleExport mod) ;
+               return acc }
+
+        | otherwise
+        = do { let { exportValid = (mod `elem` imported_modules)
+                                || (moduleName this_mod == mod)
+                   ; gre_prs     = pickGREsModExp mod (globalRdrEnvElts rdr_env)
+                   ; new_exports = map (availFromGRE . fst) gre_prs
+                   ; all_gres    = foldr (\(gre1,gre2) gres -> gre1 : gre2 : gres) [] gre_prs
+                   }
+
+             ; checkErr exportValid (moduleNotImported mod)
+             ; warnIfFlag Opt_WarnDodgyExports
+                          (exportValid && null gre_prs)
+                          (nullModuleExport mod)
+
+             ; traceRn "efa" (ppr mod $$ ppr all_gres)
+             ; addUsedGREs all_gres
+
+             ; occs' <- check_occs ie occs new_exports
+                      -- This check_occs not only finds conflicts
+                      -- between this item and others, but also
+                      -- internally within this item.  That is, if
+                      -- 'M.x' is in scope in several ways, we'll have
+                      -- several members of mod_avails with the same
+                      -- OccName.
+             ; traceRn "export_mod"
+                       (vcat [ ppr mod
+                             , ppr new_exports ])
+
+             ; return (ExportAccum (((L loc (IEModuleContentsDeprecated wtxt noExt (L lm mod)))
+                                    , new_exports) : ie_avails) occs') }
+
     exports_from_item acc@(ExportAccum lie_avails occs) (L loc ie)
         | isDoc ie
         = do new_ie <- lookup_doc_ie ie
@@ -313,6 +373,36 @@ exports_from_avail (Just (L _ rdr_items)) rdr_env imports this_mod
                     AvailTC name (name : avails ++ all_avail)
                                  (map unLoc flds ++ all_flds))
 
+    lookup_ie (IEVarDeprecated w _ (L l rdr))
+        = do (name, avail) <- lookupGreAvailRn $ ieWrappedName rdr
+             return (IEVarDeprecated w noExt (L l (replaceWrappedName rdr name)), avail)
+
+    lookup_ie (IEThingAbsDeprecated w _ (L l rdr))
+        = do (name, avail) <- lookupGreAvailRn $ ieWrappedName rdr
+             return (IEThingAbsDeprecated w noExt (L l (replaceWrappedName rdr name))
+                    , avail)
+
+    lookup_ie ie@(IEThingAllDeprecated w _ n')
+        = do
+            (n, avail, flds) <- lookup_ie_all ie n'
+            let name = unLoc n
+            return (IEThingAllDeprecated w noExt (replaceLWrappedName n' (unLoc n))
+                   , AvailTC name (name:avail) flds)
+
+
+    lookup_ie ie@(IEThingWithDeprecated w _ l wc sub_rdrs _)
+         = do
+             (lname, subs, avails, flds)
+               <- addExportErrCtxt ie $ lookup_ie_with l sub_rdrs
+             (_, all_avail, all_flds) <-
+               case wc of
+                 NoIEWildcard -> return (lname, [], [])
+                 IEWildcard _ -> lookup_ie_all ie l
+             let name = unLoc lname
+             return (IEThingWithDeprecated w noExt (replaceLWrappedName l name) wc subs
+                                 (flds ++ (map noLoc all_flds)),
+                     AvailTC name (name : avails ++ all_avail)
+                                  (map unLoc flds ++ all_flds))
 
     lookup_ie _ = panic "lookup_ie"    -- Other cases covered earlier
 
