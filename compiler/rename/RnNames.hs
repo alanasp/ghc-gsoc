@@ -367,9 +367,9 @@ rnImportDecl this_mod
     -- Complain if we import a deprecated module or explicitly import deprecated exports
     whenWOptM Opt_WarnWarningsDeprecations (
        case (mi_warns iface) of
+          WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details (mi_warns iface)
           WarnAll txt    -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                 (moduleWarn imp_mod_name txt)
-          WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details (mi_warns iface)
           _              -> return ()
      )
 
@@ -378,6 +378,7 @@ rnImportDecl this_mod
 
     return (new_imp_decl, gbl_env, imports, mi_hpc iface)
 rnImportDecl _ (L _ (XImportDecl _)) = panic "rnImportDecl"
+
 
 -- Adds import deprecation warnings if explicitly listed imports are deprecated
 maybeAddWarnsIfDeprecatedImports :: Maybe (Bool, Located [LIE GhcPs]) -> Warnings -> TcRn ()
@@ -503,7 +504,6 @@ calculateAvails dflags iface mod_safe' want_boot imported_by =
           -- See Note [Trust Own Package]
           imp_trust_own_pkg = pkg_trust_req
      }
-
 
 warnRedundantSourceImport :: ModuleName -> SDoc
 warnRedundantSourceImport mod_name
