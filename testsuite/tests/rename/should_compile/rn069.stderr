@@ -1,0 +1,4 @@
+
+rn069.hs:9:7: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘func1’ (imported from Rn069_A):
+    Deprecated: "func1 export is deprecated"
