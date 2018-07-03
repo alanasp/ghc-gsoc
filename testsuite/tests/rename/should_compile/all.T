@@ -71,6 +71,7 @@ test('rn067', [extra_files(['Rn067_A.hs'])], multimod_compile, ['rn067', '-v0'])
 test('rn068', normal, compile, [''])
 
 test('rn069', [extra_files(['Rn069_A.hs'])], multimod_compile, ['rn069', '-v0'])
+test('rn070', [extra_files(['Rn070_A.hs'])], multimod_compile, ['rn070', '-v0'])
 
 test('T17a', normal, compile, [''])
 test('T17b', normal, compile, [''])

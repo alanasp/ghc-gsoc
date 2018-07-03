@@ -48,7 +48,7 @@ import RdrHsSyn        ( setRdrNameSpace )
 import Outputable
 import Maybes
 import SrcLoc
-import BasicTypes      ( TopLevelFlag(..), StringLiteral(..) )
+import BasicTypes      ( TopLevelFlag(..), StringLiteral(..), pprWarningTxtForMsg )
 import Util
 import FastString
 import FastStringEnv
@@ -364,12 +364,13 @@ rnImportDecl this_mod
             }
         imports = calculateAvails dflags iface mod_safe' want_boot (ImportedByUser imv)
 
-    -- Complain if we import a deprecated module
+    -- Complain if we import a deprecated module or explicitly import deprecated exports
     whenWOptM Opt_WarnWarningsDeprecations (
        case (mi_warns iface) of
-          WarnAll txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
+          WarnAll txt    -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                 (moduleWarn imp_mod_name txt)
-          _           -> return ()
+          WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details (mi_warns iface)
+          _              -> return ()
      )
 
     let new_imp_decl = L loc (decl { ideclExt = noExt, ideclSafe = mod_safe'
@@ -377,6 +378,31 @@ rnImportDecl this_mod
 
     return (new_imp_decl, gbl_env, imports, mi_hpc iface)
 rnImportDecl _ (L _ (XImportDecl _)) = panic "rnImportDecl"
+
+-- Adds import deprecation warnings if explicitly listed imports are deprecated
+maybeAddWarnsIfDeprecatedImports :: Maybe (Bool, Located [LIE GhcPs]) -> Warnings -> TcRn ()
+maybeAddWarnsIfDeprecatedImports Nothing _ = return ()
+maybeAddWarnsIfDeprecatedImports (Just(True, _)) _ = return () --hiding, so no warnings
+maybeAddWarnsIfDeprecatedImports (Just(False, L _ imps)) exps = addWarnsIfDeprecatedImports imps exps
+
+addWarnsIfDeprecatedImports :: [LIE GhcPs] -> Warnings -> TcRn ()
+addWarnsIfDeprecatedImports [] _ = return ()
+addWarnsIfDeprecatedImports (imp:imps) warns = do {
+    (addWarnIfDeprecatedImport imp warns)
+  ; (addWarnsIfDeprecatedImports imps warns) }
+
+addWarnIfDeprecatedImport :: LIE GhcPs -> Warnings -> TcRn ()
+addWarnIfDeprecatedImport (L _ ie) (WarnSome warns)
+  | Just (occName, wtxt) <- occNameMention (rdrNameOcc $ ieName ie) warns =
+      addWarn (Reason Opt_WarnWarningsDeprecations) (pprWarningTxtForMsg wtxt)
+  | otherwise = return ()
+addWarnIfDeprecatedImport _ _ = return ()
+
+occNameMention :: OccName -> [(OccName,WarningTxt)] -> Maybe (OccName,WarningTxt)
+occNameMention _ []  = Nothing
+occNameMention occName0 (mention@(occName1, _):xs) | occName0 == occName1 = Just mention
+                                                   | otherwise = occNameMention occName0 xs
+
 
 -- | Calculate the 'ImportAvails' induced by an import of a particular
 -- interface, but without 'imp_mods'.
