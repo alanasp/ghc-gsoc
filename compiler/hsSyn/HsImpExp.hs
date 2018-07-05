@@ -176,10 +176,10 @@ type LIE pass = Located (IE pass)
 
 -- | Imported or exported entity.
 data IE pass
-  = IEVar       (XIEVar pass) (LIEWrappedName (IdP pass))
+  = IEVar       (Maybe WarningTxt) (XIEVar pass) (LIEWrappedName (IdP pass))
         -- ^ Imported or Exported Variable
 
-  | IEThingAbs  (XIEThingAbs pass) (LIEWrappedName (IdP pass))
+  | IEThingAbs  (Maybe WarningTxt) (XIEThingAbs pass) (LIEWrappedName (IdP pass))
         -- ^ Imported or exported Thing with Absent list
         --
         -- The thing is a Class/Type (can't tell)
@@ -188,7 +188,7 @@ data IE pass
 
         -- For details on above see note [Api annotations] in ApiAnnotation
         -- See Note [Located RdrNames] in HsExpr
-  | IEThingAll  (XIEThingAll pass) (LIEWrappedName (IdP pass))
+  | IEThingAll  (Maybe WarningTxt) (XIEThingAll pass) (LIEWrappedName (IdP pass))
         -- ^ Imported or exported Thing with All imported or exported
         --
         -- The thing is a Class/Type and the All refers to methods/constructors
@@ -200,7 +200,7 @@ data IE pass
         -- For details on above see note [Api annotations] in ApiAnnotation
         -- See Note [Located RdrNames] in HsExpr
 
-  | IEThingWith (XIEThingWith pass)
+  | IEThingWith (Maybe WarningTxt) (XIEThingWith pass)
                 (LIEWrappedName (IdP pass))
                 IEWildcard
                 [LIEWrappedName (IdP pass)]
@@ -215,7 +215,7 @@ data IE pass
         --                                   'ApiAnnotation.AnnType'
 
         -- For details on above see note [Api annotations] in ApiAnnotation
-  | IEModuleContents  (XIEModuleContents pass) (Located ModuleName)
+  | IEModuleContents  (Maybe WarningTxt) (XIEModuleContents pass) (Located ModuleName)
         -- ^ Imported or exported module contents
         --
         -- (Export Only)
@@ -227,21 +227,6 @@ data IE pass
   | IEDoc               (XIEDoc pass) HsDocString       -- ^ Some documentation
   | IEDocNamed          (XIEDocNamed pass) String    -- ^ Reference to named doc
   | XIE (XXIE pass)
-  | IEVarDeprecated     WarningTxt (XIEVar pass) (LIEWrappedName (IdP pass))
-        -- ^ Deprecated Imported or Exported Variable
-
-  | IEThingAbsDeprecated  WarningTxt (XIEThingAbs pass) (LIEWrappedName (IdP pass))
-        -- ^ Deprecated Imported or exported Thing with Absent list
-  | IEThingAllDeprecated  WarningTxt (XIEThingAll pass) (LIEWrappedName (IdP pass))
-        -- ^ Deprecated Imported or exported Thing with All imported or exported
-  | IEThingWithDeprecated  WarningTxt (XIEThingWith pass)
-                (LIEWrappedName (IdP pass))
-                IEWildcard
-                [LIEWrappedName (IdP pass)]
-                [Located (FieldLbl (IdP pass))]
-        -- ^ Deprecated Imported or exported Thing With given imported or exported
-  | IEModuleContentsDeprecated WarningTxt (XIEModuleContents pass) (Located ModuleName)
-        -- ^ Deprecated Imported or exported module contents
 
 type instance XIEVar             (GhcPass _) = NoExt
 type instance XIEThingAbs        (GhcPass _) = NoExt
@@ -274,29 +259,19 @@ See Note [Representing fields in AvailInfo] in Avail for more details.
 -}
 
 ieName :: IE pass -> IdP pass
-ieName (IEVar _ (L _ n))              = ieWrappedName n
-ieName (IEThingAbs  _ (L _ n))        = ieWrappedName n
-ieName (IEThingWith _ (L _ n) _ _ _)  = ieWrappedName n
-ieName (IEThingAll  _ (L _ n))        = ieWrappedName n
-ieName (IEVarDeprecated _ _ (L _ n))              = ieWrappedName n
-ieName (IEThingAbsDeprecated _ _ (L _ n))         = ieWrappedName n
-ieName (IEThingWithDeprecated _ _ (L _ n) _ _ _)  = ieWrappedName n
-ieName (IEThingAllDeprecated _ _ (L _ n))         = ieWrappedName n
+ieName (IEVar _ _ (L _ n))              = ieWrappedName n
+ieName (IEThingAbs  _ _ (L _ n))        = ieWrappedName n
+ieName (IEThingWith _ _ (L _ n) _ _ _)  = ieWrappedName n
+ieName (IEThingAll  _ _ (L _ n))        = ieWrappedName n
 ieName _ = panic "ieName failed pattern match!"
 
 ieNames :: IE pass -> [IdP pass]
-ieNames (IEVar       _ (L _ n)   )     = [ieWrappedName n]
-ieNames (IEThingAbs  _ (L _ n)   )     = [ieWrappedName n]
-ieNames (IEThingAll  _ (L _ n)   )     = [ieWrappedName n]
-ieNames (IEThingWith _ (L _ n) _ ns _) = ieWrappedName n
-                                       : map (ieWrappedName . unLoc) ns
-ieNames (IEVarDeprecated       _ _ (L _ n)   )     = [ieWrappedName n]
-ieNames (IEThingAbsDeprecated  _ _ (L _ n)   )     = [ieWrappedName n]
-ieNames (IEThingAllDeprecated  _ _ (L _ n)   )     = [ieWrappedName n]
-ieNames (IEThingWithDeprecated _ _ (L _ n) _ ns _) = ieWrappedName n
-                                     : map (ieWrappedName . unLoc) ns
+ieNames (IEVar       _ _ (L _ n)   )     = [ieWrappedName n]
+ieNames (IEThingAbs  _ _ (L _ n)   )     = [ieWrappedName n]
+ieNames (IEThingAll  _ _ (L _ n)   )     = [ieWrappedName n]
+ieNames (IEThingWith _ _ (L _ n) _ ns _) = [ieWrappedName n]
+
 ieNames (IEModuleContents {})     = []
-ieNames (IEModuleContentsDeprecated {})     = []
 ieNames (IEGroup          {})     = []
 ieNames (IEDoc            {})     = []
 ieNames (IEDocNamed       {})     = []
@@ -319,10 +294,10 @@ replaceLWrappedName :: LIEWrappedName name1 -> name2 -> LIEWrappedName name2
 replaceLWrappedName (L l n) n' = L l (replaceWrappedName n n')
 
 instance (p ~ GhcPass pass,OutputableBndrId p) => Outputable (IE p) where
-    ppr (IEVar       _     var) = ppr (unLoc var)
-    ppr (IEThingAbs  _   thing) = ppr (unLoc thing)
-    ppr (IEThingAll  _   thing) = hcat [ppr (unLoc thing), text "(..)"]
-    ppr (IEThingWith _ thing wc withs flds)
+    ppr (IEVar       _ _     var) = ppr (unLoc var)
+    ppr (IEThingAbs  _ _   thing) = ppr (unLoc thing)
+    ppr (IEThingAll  _ _   thing) = hcat [ppr (unLoc thing), text "(..)"]
+    ppr (IEThingWith _ _ thing wc withs flds)
         = ppr (unLoc thing) <> parens (fsep (punctuate comma
                                               (ppWiths ++
                                               map (ppr . flLabel . unLoc) flds)))
@@ -334,24 +309,7 @@ instance (p ~ GhcPass pass,OutputableBndrId p) => Outputable (IE p) where
               IEWildcard pos ->
                 let (bs, as) = splitAt pos (map (ppr . unLoc) withs)
                 in bs ++ [text ".."] ++ as
-    ppr (IEModuleContents _ mod')
-        = text "module" <+> ppr mod'
-    ppr (IEVarDeprecated       _ _     var) = ppr (unLoc var)
-    ppr (IEThingAbsDeprecated  _ _   thing) = ppr (unLoc thing)
-    ppr (IEThingAllDeprecated  _ _   thing) = hcat [ppr (unLoc thing), text "(..)"]
-    ppr (IEThingWithDeprecated _ _ thing wc withs flds)
-        = ppr (unLoc thing) <> parens (fsep (punctuate comma
-                                              (ppWiths ++
-                                              map (ppr . flLabel . unLoc) flds)))
-      where
-        ppWiths =
-          case wc of
-              NoIEWildcard ->
-                map (ppr . unLoc) withs
-              IEWildcard pos ->
-                let (bs, as) = splitAt pos (map (ppr . unLoc) withs)
-                in bs ++ [text ".."] ++ as
-    ppr (IEModuleContentsDeprecated _ _ mod')
+    ppr (IEModuleContents _ _ mod')
         = text "module" <+> ppr mod'
     ppr (IEGroup _ n _)           = text ("<IEGroup: " ++ show n ++ ">")
     ppr (IEDoc _ doc)             = ppr doc

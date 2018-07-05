@@ -64,7 +64,6 @@ module   RdrHsSyn (
         ImpExpSubSpec(..),
         ImpExpQcSpec(..),
         mkModuleImpExp,
-        mkModuleImpExpDeprecated,
         mkTypeImpExp,
         mkImpExpSubSpec,
         checkImportSpec,
@@ -1655,17 +1654,18 @@ data ImpExpQcSpec = ImpExpQcName (Located RdrName)
                   | ImpExpQcType (Located RdrName)
                   | ImpExpQcWildcard
 
-mkModuleImpExp :: Located ImpExpQcSpec -> ImpExpSubSpec -> P (IE GhcPs)
-mkModuleImpExp (L l specname) subs =
+mkModuleImpExp :: Maybe WarningTxt-> Located ImpExpQcSpec -> ImpExpSubSpec -> P (IE GhcPs)
+mkModuleImpExp maybeWarnTxt (L l specname) subs =
   case subs of
     ImpExpAbs
       | isVarNameSpace (rdrNameSpace name)
-                         -> return $ IEVar noExt (L l (ieNameFromSpec specname))
-      | otherwise        -> IEThingAbs noExt . L l <$> nameT
-    ImpExpAll            -> IEThingAll noExt . L l <$> nameT
+                         -> return $ IEVar maybeWarnTxt noExt
+                                      (L l (ieNameFromSpec specname))
+      | otherwise        -> IEThingAbs maybeWarnTxt noExt . L l <$> nameT
+    ImpExpAll            -> IEThingAll maybeWarnTxt noExt . L l <$> nameT
     ImpExpList xs        ->
-      (\newName -> IEThingWith noExt (L l newName) NoIEWildcard (wrapped xs) [])
-        <$> nameT
+      (\newName -> IEThingWith maybeWarnTxt noExt (L l newName)
+                    NoIEWildcard (wrapped xs) []) <$> nameT
     ImpExpAllWith xs                       ->
       do allowed <- extension patternSynonymsEnabled
          if allowed
@@ -1674,8 +1674,8 @@ mkModuleImpExp (L l specname) subs =
                 pos   = maybe NoIEWildcard IEWildcard
                           (findIndex isImpExpQcWildcard withs)
                 ies   = wrapped $ filter (not . isImpExpQcWildcard . unLoc) xs
-            in (\newName
-                        -> IEThingWith noExt (L l newName) pos ies []) <$> nameT
+            in (\newName -> IEThingWith maybeWarnTxt noExt
+                              (L l newName) pos ies []) <$> nameT
           else parseErrorSDoc l
             (text "Illegal export form (use PatternSynonyms to enable)")
   where
@@ -1701,51 +1701,6 @@ mkModuleImpExp (L l specname) subs =
 
     wrapped = map (\(L l x) -> L l (ieNameFromSpec x))
 
-mkModuleImpExpDeprecated :: WarningTxt -> Located ImpExpQcSpec -> ImpExpSubSpec -> P (IE GhcPs)
-mkModuleImpExpDeprecated wtxt (L l specname) subs =
-  case subs of
-    ImpExpAbs
-      | isVarNameSpace (rdrNameSpace name)
-                         -> return $ IEVarDeprecated wtxt noExt (L l (ieNameFromSpec specname))
-      | otherwise        -> IEThingAbsDeprecated wtxt noExt . L l <$> nameT
-    ImpExpAll            -> IEThingAllDeprecated wtxt noExt . L l <$> nameT
-    ImpExpList xs        ->
-      (\newName -> IEThingWithDeprecated wtxt noExt (L l newName) NoIEWildcard (wrapped xs) [])
-        <$> nameT
-    ImpExpAllWith xs                       ->
-      do allowed <- extension patternSynonymsEnabled
-         if allowed
-          then
-            let withs = map unLoc xs
-                pos   = maybe NoIEWildcard IEWildcard
-                          (findIndex isImpExpQcWildcard withs)
-                ies   = wrapped $ filter (not . isImpExpQcWildcard . unLoc) xs
-            in (\newName
-                        -> IEThingWithDeprecated wtxt noExt (L l newName) pos ies []) <$> nameT
-          else parseErrorSDoc l
-            (text "Illegal export form (use PatternSynonyms to enable)")
-  where
-    name = ieNameVal specname
-    nameT =
-      if isVarNameSpace (rdrNameSpace name)
-        then parseErrorSDoc l
-              (text "Expecting a type constructor but found a variable,"
-               <+> quotes (ppr name) <> text "."
-              $$ if isSymOcc $ rdrNameOcc name
-                   then text "If" <+> quotes (ppr name) <+> text "is a type constructor"
-                    <+> text "then enable ExplicitNamespaces and use the 'type' keyword."
-                   else empty)
-        else return $ ieNameFromSpec specname
-
-    ieNameVal (ImpExpQcName ln)  = unLoc ln
-    ieNameVal (ImpExpQcType ln)  = unLoc ln
-    ieNameVal (ImpExpQcWildcard) = panic "ieNameVal got wildcard"
-
-    ieNameFromSpec (ImpExpQcName ln)  = IEName ln
-    ieNameFromSpec (ImpExpQcType ln)  = IEType ln
-    ieNameFromSpec (ImpExpQcWildcard) = panic "ieName got wildcard"
-
-    wrapped = map (\(L l x) -> L l (ieNameFromSpec x))
 
 mkTypeImpExp :: Located RdrName   -- TcCls or Var name space
              -> P (Located RdrName)
@@ -1758,7 +1713,7 @@ mkTypeImpExp name =
 
 checkImportSpec :: Located [LIE GhcPs] -> P (Located [LIE GhcPs])
 checkImportSpec ie@(L _ specs) =
-    case [l | (L l (IEThingWith _ _ (IEWildcard _) _ _)) <- specs] of
+    case [l | (L l (IEThingWith _ _ _ (IEWildcard _) _ _)) <- specs] of
       [] -> return ie
       (l:_) -> importSpecError l
   where

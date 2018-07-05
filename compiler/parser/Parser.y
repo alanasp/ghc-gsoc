@@ -859,24 +859,21 @@ exp_doc :: { OrdList (LIE GhcPs) }
    -- No longer allow things like [] and (,,,) to be exported
    -- They are built in syntax, always available
 export  :: { OrdList (LIE GhcPs) }
-        : qcname_ext export_subspec  {% mkModuleImpExp $1 (snd $ unLoc $2)
-                                          >>= \ie -> amsu (sLL $1 $> ie) (fst $ unLoc $2) }
-        |  'module' modid            {% amsu (sLL $1 $> (IEModuleContents noExt $2))
-                                             [mj AnnModule $1] }
-        |  'pattern' qcon            {% amsu (sLL $1 $> (IEVar noExt (sLL $1 $> (IEPattern $2))))
-                                             [mj AnnPattern $1] }
-        |  deprWarning qcname_ext export_subspec  {% mkModuleImpExpDeprecated $1 $2 (snd $ unLoc $3)
-                                         >>= \ie -> amsu (sLL $2 $> ie) (fst $ unLoc $3) }
-        |  deprWarning 'module' modid
-                    {% amsu (sLL $2 $> (IEModuleContentsDeprecated $1 noExt $3))
+        :  maybeDeprWarning qcname_ext export_subspec
+                            {% mkModuleImpExp $1 $2 (snd $ unLoc $3)
+                              >>= \ie -> amsu (sLL $2 $> ie) (fst $ unLoc $3) }
+        |  maybeDeprWarning 'module' modid
+                    {% amsu (sLL $2 $> (IEModuleContents $1 noExt $3))
                                             [mj AnnModule $2] }
-        |  deprWarning 'pattern' qcon
-                  {% amsu (sLL $2 $> (IEVarDeprecated $1 noExt (sLL $2 $> (IEPattern $3))))
+        |  maybeDeprWarning 'pattern' qcon
+                  {% amsu (sLL $2 $> (IEVar $1 noExt (sLL $2 $> (IEPattern $3))))
                                             [mj AnnPattern $2] }
 
-deprWarning  :: { WarningTxt }
-        : '{-# DEPRECATED' STRING '#-}' { DeprecatedTxt ( noLoc NoSourceText )
-                                       [sL1 $2 $ StringLiteral (NoSourceText) (getSTRING $2)] }
+maybeDeprWarning  :: { Maybe WarningTxt }
+        : '{-# DEPRECATED' STRING '#-}'
+              { Just $ DeprecatedTxt ( noLoc NoSourceText )
+                  [sL1 $2 $ StringLiteral (NoSourceText) (getSTRING $2)] }
+        | {- empty -}                 { Nothing }
 
 export_subspec :: { Located ([AddAnn],ImpExpSubSpec) }
         : {- empty -}             { sL0 ([],ImpExpAbs) }
