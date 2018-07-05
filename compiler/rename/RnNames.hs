@@ -48,7 +48,8 @@ import RdrHsSyn        ( setRdrNameSpace )
 import Outputable
 import Maybes
 import SrcLoc
-import BasicTypes      ( TopLevelFlag(..), StringLiteral(..) )
+import BasicTypes      ( TopLevelFlag(..), StringLiteral(..),
+                         pprWarningTxtForMsg )
 import Util
 import FastString
 import FastStringEnv
@@ -378,8 +379,6 @@ rnImportDecl this_mod
     return (new_imp_decl, gbl_env, imports, mi_hpc iface)
 rnImportDecl _ (L _ (XImportDecl _)) = panic "rnImportDecl"
 
-<<<<<<< Updated upstream
-=======
 -- Adds import deprecation warnings if explicitly listed imports are deprecated
 maybeAddWarnsIfDeprecatedImports :: Maybe (Bool, Located [LIE GhcPs]) -> Warnings -> TcRn ()
 maybeAddWarnsIfDeprecatedImports Nothing _ = return ()
@@ -405,7 +404,6 @@ occNameMention occName0 (mention@(occName1, _):xs) | occName0 == occName1 = Just
                                                    | otherwise = occNameMention occName0 xs
 
 
->>>>>>> Stashed changes
 -- | Calculate the 'ImportAvails' induced by an import of a particular
 -- interface, but without 'imp_mods'.
 calculateAvails :: DynFlags
