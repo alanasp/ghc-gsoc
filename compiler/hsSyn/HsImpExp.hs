@@ -66,6 +66,7 @@ data ImportDecl pass
       ideclAs        :: Maybe (Located ModuleName),  -- ^ as Module
       ideclHiding    :: Maybe (Bool, Located [LIE pass])
                                        -- ^ (True => hiding, names)
+                                       -- ^ (False => explicit export list)
     }
   | XImportDecl (XXImportDecl pass)
      -- ^

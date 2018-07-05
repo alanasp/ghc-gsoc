@@ -365,12 +365,13 @@ rnImportDecl this_mod
             }
         imports = calculateAvails dflags iface mod_safe' want_boot (ImportedByUser imv)
 
-    -- Complain if we import a deprecated module
+    -- Complain if we import a deprecated module or explicitly import deprecated exports
     whenWOptM Opt_WarnWarningsDeprecations (
        case (mi_warns iface) of
-          WarnAll txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
+          WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details (mi_warns iface)
+          WarnAll txt    -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                 (moduleWarn imp_mod_name txt)
-          _           -> return ()
+          _              -> return ()
      )
 
     let new_imp_decl = L loc (decl { ideclExt = noExt, ideclSafe = mod_safe'
@@ -503,7 +504,6 @@ calculateAvails dflags iface mod_safe' want_boot imported_by =
           -- See Note [Trust Own Package]
           imp_trust_own_pkg = pkg_trust_req
      }
-
 
 warnRedundantSourceImport :: ModuleName -> SDoc
 warnRedundantSourceImport mod_name
