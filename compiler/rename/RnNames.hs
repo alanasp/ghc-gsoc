@@ -368,7 +368,7 @@ rnImportDecl this_mod
     -- Complain if we import a deprecated module or explicitly import deprecated exports
     whenWOptM Opt_WarnWarningsDeprecations (
        case (mi_warns iface) of
-          WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details (mi_warns iface)
+          WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details (WarnSome warns)
           WarnAll txt    -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                 (moduleWarn imp_mod_name txt)
           _              -> return ()
@@ -394,7 +394,7 @@ addWarnsIfDeprecatedImports (imp:imps) warns = do {
 
 addWarnIfDeprecatedImport :: LIE GhcPs -> Warnings -> TcRn ()
 addWarnIfDeprecatedImport (L _ ie) (WarnSome warns)
-  | Just (occName, wtxt) <- occNameMention (rdrNameOcc $ ieName ie) warns =
+  | Just (_, wtxt) <- occNameMention (rdrNameOcc $ ieName ie) warns =
       addWarn (Reason Opt_WarnWarningsDeprecations) (pprWarningTxtForMsg wtxt)
   | otherwise = return ()
 addWarnIfDeprecatedImport _ _ = return ()
