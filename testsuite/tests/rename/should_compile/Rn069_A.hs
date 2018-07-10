@@ -8,4 +8,3 @@ data T = C | D
 
 func1 :: Int
 func1 = 42
-
