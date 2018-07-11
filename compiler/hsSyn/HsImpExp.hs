@@ -270,7 +270,8 @@ ieNames :: IE pass -> [IdP pass]
 ieNames (IEVar       _ _ (L _ n)   )     = [ieWrappedName n]
 ieNames (IEThingAbs  _ _ (L _ n)   )     = [ieWrappedName n]
 ieNames (IEThingAll  _ _ (L _ n)   )     = [ieWrappedName n]
-ieNames (IEThingWith _ _ (L _ n) _ ns _) = [ieWrappedName n]
+ieNames (IEThingWith _ _ (L _ n) _ ns _) = ieWrappedName n
+                                    : map (ieWrappedName . unLoc) ns
 
 ieNames (IEModuleContents {})     = []
 ieNames (IEGroup          {})     = []
