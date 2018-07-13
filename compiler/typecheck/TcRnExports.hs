@@ -33,6 +33,7 @@ import DataCon
 import PatSyn
 import Maybes
 import Util (capitalise)
+import LoadIface
 
 
 import Control.Monad
@@ -150,7 +151,21 @@ tcRnExports explicit_mod exports
                 else checkNoErrs do_it
         ; let final_ns     = availsToNameSetWithSelectors final_avails
 
-        ; traceRn "rnExports: Exports:" (ppr final_avails)
+        ; traceRn "rnExports: final_ns:" (ppr final_ns)
+
+        ; let reexp_module_names = get_reexp_module_names exports
+
+        ; reexp_module_ifaces <- get_reexp_module_ifaces reexp_module_names
+
+        ; case reexp_module_ifaces of
+            (Just iface) -> do {
+                traceRn "rnExports: reexport exports:" (ppr $ mi_exports iface)
+              ; traceRn "rnExports: reexport warnings:" (ppr $ mi_warns iface)
+            }
+            (Nothing) -> do {
+                traceRn "rnExports: reexport exports:" "Nothing"
+              ; traceRn "rnExports: reexport warnings:" "Nothing"
+            }
 
         ; let export_deprecation_warns = get_export_depr_warns exports
 
@@ -166,6 +181,27 @@ tcRnExports explicit_mod exports
         ; return new_tcg_env }
 
 
+get_reexp_module_ifaces :: [(ModuleName, Maybe WarningTxt)] ->
+                           RnM (Maybe ModIface)
+get_reexp_module_ifaces [] = return Nothing
+get_reexp_module_ifaces ((mod_name, _):_) = do {
+    iface <- loadSrcInterface (text "adding reexport deprecations") mod_name False Nothing
+  ; return $ Just iface }
+
+
+get_reexp_module_names :: Maybe (Located [LIE GhcPs]) ->
+                          [(ModuleName, Maybe WarningTxt)]
+get_reexp_module_names Nothing = []
+get_reexp_module_names (Just (L _ [])) = []
+get_reexp_module_names (Just (L x (lie:lie_tail))) =
+  (get_mod_name_if_reexp lie) ++ (get_reexp_module_names (Just (L x lie_tail)))
+
+
+get_mod_name_if_reexp :: LIE GhcPs -> [(ModuleName, Maybe WarningTxt)]
+get_mod_name_if_reexp (L _ (IEModuleContents mayb_wtxt _ loc_mod_name)) =
+  [(unLoc loc_mod_name, mayb_wtxt)]
+get_mod_name_if_reexp _                                             = []
+
 get_export_depr_warns :: Maybe (Located [LIE GhcPs]) -> Warnings
 get_export_depr_warns Nothing = NoWarnings
 get_export_depr_warns (Just (L _ [])) = NoWarnings
@@ -174,13 +210,29 @@ get_export_depr_warns (Just (L x (lie:lie_tail))) =
 
 
 get_lie_depr_warns :: LIE GhcPs -> Warnings
-get_lie_depr_warns (L _ ie@(IEVar              (Just wtxt) _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
-get_lie_depr_warns (L _ ie@(IEThingAbs         (Just wtxt) _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
-get_lie_depr_warns (L _ ie@(IEThingAll         (Just wtxt) _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
-get_lie_depr_warns (L _ ie@(IEThingWith  (Just wtxt) _ _ _ _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
---get_lie_depr_warns (L _ ie@(IEModuleContents (Just wtxt) _ _)) = WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
-get_lie_depr_warns _                                               = NoWarnings
+get_lie_depr_warns (L _ ie@(IEVar                       (Just wtxt) _ _)) =
+  WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+get_lie_depr_warns (L _ ie@(IEThingAbs                  (Just wtxt) _ _)) =
+  WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+get_lie_depr_warns (L _ ie@(IEThingAll                  (Just wtxt) _ _)) =
+  WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+get_lie_depr_warns (L _ ie@(IEThingWith           (Just wtxt) _ _ _ _ _)) =
+  WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
+--get_lie_depr_warns (L _ ie@(IEModuleContents (Just wtxt) _ loc_mod_name)) =
+--  warn_all_exports_from_module_name (unLoc loc_mod_name)
+get_lie_depr_warns _                                             = NoWarnings
 
+{-
+warn_all_exports_from_module_name :: ModuleName -> Warnings
+warn_all_exports_from_module_name modName =
+  warn_all_exports_from_module_iface (loadSrcInterface
+    (text "adding reexport deprecations") modName False Nothing)
+
+
+warn_all_exports_from_module_iface :: ModIface -> Warnings
+warn_all_exports_from_module_iface iface = trace (showSDocUnsafe $ ppr $ mi_exports iface) $
+  trace (showSDocUnsafe $ ppr $ mi_warns iface) NoWarnings
+-}
 
 exports_from_avail :: Maybe (Located [LIE GhcPs])
                          -- Nothing => no explicit export list

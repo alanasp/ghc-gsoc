@@ -341,6 +341,11 @@ rnImportDecl this_mod
     -- filter the imports according to the import declaration
     (new_imp_details, gres) <- filterImports iface imp_spec imp_details
 
+    traceRn "imp_details" (ppr imp_details)
+    traceRn "new_imp_details" (ppr new_imp_details)
+    traceRn "mi_exports iface" (ppr $ mi_exports iface)
+    traceRn "mi_warns iface" (ppr $ mi_warns iface)
+
     -- for certain error messages, we’d like to know what could be imported
     -- here, if everything were imported
     potential_gres <- mkGlobalRdrEnv . snd <$> filterImports iface imp_spec Nothing
