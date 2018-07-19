@@ -368,7 +368,8 @@ rnImportDecl this_mod
     -- Complain if we import a deprecated module or explicitly import deprecated exports
     whenWOptM Opt_WarnWarningsDeprecations (
        case (mi_warns iface) of
-          WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details (WarnSome warns)
+          WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details
+                              (WarnSome warns)
           WarnAll txt    -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                 (moduleWarn imp_mod_name txt)
           _              -> return ()
