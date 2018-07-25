@@ -151,21 +151,31 @@ tcRnExports explicit_mod exports
                 else checkNoErrs do_it
         ; let final_ns     = availsToNameSetWithSelectors final_avails
 
-        ; traceRn "rnExports: final_ns:" (ppr final_ns)
+        ; traceRn "rnExports: final_avails:" (ppr final_avails)
 
-        ; let reexp_module_names = get_reexp_module_names exports
+        ; let reexp_module_names_wtxts = get_reexp_module_names_wtxts exports
 
-        ; reexp_module_ifaces <- get_reexp_module_ifaces reexp_module_names
+        ; reexp_module_ifaces_wtxts <- get_reexp_module_ifaces_wtxts
+                                          reexp_module_names_wtxts
 
-        ; case reexp_module_ifaces of
-            (Just iface) -> do {
-                traceRn "rnExports: reexport exports:" (ppr $ mi_exports iface)
-              ; traceRn "rnExports: reexport warnings:" (ppr $ mi_warns iface)
-            }
-            (Nothing) -> do {
-                traceRn "rnExports: reexport exports:" "Nothing"
-              ; traceRn "rnExports: reexport warnings:" "Nothing"
-            }
+        ; let mod_reexp_warns = get_reexp_warns reexp_module_ifaces_wtxts
+
+        --; traceRn "rnExports: reexport exports:" (ppr $ map mi_exports reexp_module_ifaces)
+
+        --; let mod_reexp_warns2 = WarnSome $ map (\occName -> (occName, DeprecatedTxt (noLoc NoSourceText) [noLoc $ StringLiteral NoSourceText $ mkFastString"some text"])) (map (nameOccName . availName) $ get_reexp_exps reexp_module_ifaces)
+
+        ;
+          {-      case reexp_module_ifaces of
+                  (Just iface) -> do {
+                      traceRn "rnExports: reexport exports:" (ppr $ mi_exports iface)
+                    ; traceRn "rnExports: reexport warnings:" (ppr $ mi_warns iface)
+                    ; return $ mi_warns iface
+                  }
+                  ([]) -> do {
+                      traceRn "rnExports: reexport exports:" "Nothing"
+                    ; traceRn "rnExports: reexport warnings:" "Nothing"
+                    ; return NoWarnings
+                  }-}
 
         ; let export_deprecation_warns = get_export_depr_warns exports
 
@@ -176,25 +186,43 @@ tcRnExports explicit_mod exports
                                                 Just _  -> rn_exports,
                             tcg_dus = tcg_dus tcg_env `plusDU`
                                       usesOnly final_ns,
-                            tcg_warns = tcg_warns tcg_env `plusWarns` export_deprecation_warns }
+                            tcg_warns = tcg_warns tcg_env `plusWarns`
+                              export_deprecation_warns `plusWarns`
+                              mod_reexp_warns
+                          }
         ; failIfErrsM
         ; return new_tcg_env }
 
 
-get_reexp_module_ifaces :: [(ModuleName, Maybe WarningTxt)] ->
-                           RnM (Maybe ModIface)
-get_reexp_module_ifaces [] = return Nothing
-get_reexp_module_ifaces ((mod_name, _):_) = do {
-    iface <- loadSrcInterface (text "adding reexport deprecations") mod_name False Nothing
-  ; return $ Just iface }
+get_reexp_warns :: [(ModIface, Maybe WarningTxt)] -> Warnings
+get_reexp_warns [] = NoWarnings
+get_reexp_warns ((iface, Nothing):xs) = (mi_warns iface) `plusWarns`
+                                    (get_reexp_warns xs)
+get_reexp_warns ((iface, Just wtxt):xs) =
+  WarnSome (map exp_to_warn (mi_exports iface))
+    `plusWarns` (get_reexp_warns xs)
+  where
+    exp_to_warn export = ((nameOccName . availName) export, wtxt)
 
 
-get_reexp_module_names :: Maybe (Located [LIE GhcPs]) ->
-                          [(ModuleName, Maybe WarningTxt)]
-get_reexp_module_names Nothing = []
-get_reexp_module_names (Just (L _ [])) = []
-get_reexp_module_names (Just (L x (lie:lie_tail))) =
-  (get_mod_name_if_reexp lie) ++ (get_reexp_module_names (Just (L x lie_tail)))
+get_reexp_module_ifaces_wtxts :: [(ModuleName, Maybe WarningTxt)] ->
+                                  RnM [(ModIface, Maybe WarningTxt)]
+get_reexp_module_ifaces_wtxts [] = return []
+get_reexp_module_ifaces_wtxts ((mod_name, mayb_wtxt):xs) = do {
+      iface <- loadSrcInterface (text "adding reexport deprecations")
+                                  mod_name False Nothing
+    ; ifcs_wtxts <- get_reexp_module_ifaces_wtxts xs
+    ; return $ (iface, mayb_wtxt):ifcs_wtxts
+  }
+
+
+get_reexp_module_names_wtxts :: Maybe (Located [LIE GhcPs]) ->
+                              [(ModuleName, Maybe WarningTxt)]
+get_reexp_module_names_wtxts Nothing = []
+get_reexp_module_names_wtxts (Just (L _ [])) = []
+get_reexp_module_names_wtxts (Just (L x (lie:lie_tail))) =
+  (get_mod_name_if_reexp lie) ++
+  (get_reexp_module_names_wtxts (Just (L x lie_tail)))
 
 
 get_mod_name_if_reexp :: LIE GhcPs -> [(ModuleName, Maybe WarningTxt)]
@@ -205,8 +233,8 @@ get_mod_name_if_reexp _                                             = []
 get_export_depr_warns :: Maybe (Located [LIE GhcPs]) -> Warnings
 get_export_depr_warns Nothing = NoWarnings
 get_export_depr_warns (Just (L _ [])) = NoWarnings
-get_export_depr_warns (Just (L x (lie:lie_tail))) =
-  (get_lie_depr_warns lie) `plusWarns` (get_export_depr_warns (Just (L x lie_tail)))
+get_export_depr_warns (Just (L x (lie:lie_tail))) = (get_lie_depr_warns lie)
+  `plusWarns` (get_export_depr_warns (Just (L x lie_tail)))
 
 
 get_lie_depr_warns :: LIE GhcPs -> Warnings
@@ -222,17 +250,6 @@ get_lie_depr_warns (L _ ie@(IEThingWith           (Just wtxt) _ _ _ _ _)) =
 --  warn_all_exports_from_module_name (unLoc loc_mod_name)
 get_lie_depr_warns _                                             = NoWarnings
 
-{-
-warn_all_exports_from_module_name :: ModuleName -> Warnings
-warn_all_exports_from_module_name modName =
-  warn_all_exports_from_module_iface (loadSrcInterface
-    (text "adding reexport deprecations") modName False Nothing)
-
-
-warn_all_exports_from_module_iface :: ModIface -> Warnings
-warn_all_exports_from_module_iface iface = trace (showSDocUnsafe $ ppr $ mi_exports iface) $
-  trace (showSDocUnsafe $ ppr $ mi_warns iface) NoWarnings
--}
 
 exports_from_avail :: Maybe (Located [LIE GhcPs])
                          -- Nothing => no explicit export list
