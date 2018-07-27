@@ -46,7 +46,8 @@ module RnEnv (
 
 import GhcPrelude
 
-import LoadIface        ( loadInterfaceForName, loadSrcInterface_maybe )
+import LoadIface        ( loadInterfaceForName, loadSrcInterface_maybe,
+                          loadSrcInterface )
 import IfaceEnv
 import HsSyn
 import RdrName
@@ -1235,19 +1236,32 @@ addUsedGREs gres
 
 warnIfDeprecated :: GlobalRdrElt -> RnM ()
 warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
-  | (imp_spec : _) <- iss
+  | [] <- iss = return ()
+  | otherwise
   = do { dflags <- getDynFlags
        ; this_mod <- getModule
+       ; mayb_imp_spec <- tryPickNonDeprecImp occ iss
+       ; let imp_spec = case mayb_imp_spec of
+                          Just is -> is
+                          Nothing -> head iss
        ; when (wopt Opt_WarnWarningsDeprecations dflags &&
                not (nameIsLocalOrFrom this_mod name)) $
                    -- See Note [Handling of deprecations]
-         do { iface <- loadInterfaceForName doc name
-            ; case lookupImpDeprec iface gre of
+         do { iface_def <- loadInterfaceForName doc name
+            ; case lookupImpDeprec iface_def gre of
                 Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                    (mk_msg imp_spec txt)
-                Nothing  -> return () } }
-  | otherwise
-  = return ()
+                Nothing  -> return ()
+            ; iface_imp <- loadSrcInterface (text "load import module")
+                              (importSpecModule imp_spec) False Nothing
+            ; traceRn "warnIfDeprecated: GlobalRdrElt" (ppr gre)
+            ; traceRn "warnIfDeprecated: imp_spec" (ppr imp_spec)
+            ; case lookupImpDeprec iface_imp gre of
+                Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
+                                   (mk_msg imp_spec txt)
+                Nothing  -> return ()
+         }
+    }
   where
     occ = greOccName gre
     name_mod = ASSERT2( isExternalName name, ppr name ) nameModule name
@@ -1264,6 +1278,20 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
         imp_msg  = text "imported from" <+> ppr imp_mod <> extra
         extra | imp_mod == moduleName name_mod = Outputable.empty
               | otherwise = text ", but defined in" <+> ppr name_mod
+
+
+tryPickNonDeprecImp :: OccName -> [ImportSpec] -> RnM(Maybe ImportSpec)
+tryPickNonDeprecImp _ [] = return Nothing
+tryPickNonDeprecImp occ (imp_spec:iss) = do {
+        iface_imp <- loadSrcInterface (text "load import module")
+                  (importSpecModule imp_spec) False Nothing
+     ;  let isDeprec = case (mi_warn_fn iface_imp occ) of
+                         Just _ -> True
+                         Nothing -> False
+    ;   if isDeprec then tryPickNonDeprecImp occ iss
+                    else return $ Just imp_spec
+  }
+
 
 lookupImpDeprec :: ModIface -> GlobalRdrElt -> Maybe WarningTxt
 lookupImpDeprec iface gre

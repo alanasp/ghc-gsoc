@@ -160,23 +160,6 @@ tcRnExports explicit_mod exports
 
         ; let mod_reexp_warns = get_reexp_warns reexp_module_ifaces_wtxts
 
-        --; traceRn "rnExports: reexport exports:" (ppr $ map mi_exports reexp_module_ifaces)
-
-        --; let mod_reexp_warns2 = WarnSome $ map (\occName -> (occName, DeprecatedTxt (noLoc NoSourceText) [noLoc $ StringLiteral NoSourceText $ mkFastString"some text"])) (map (nameOccName . availName) $ get_reexp_exps reexp_module_ifaces)
-
-        ;
-          {-      case reexp_module_ifaces of
-                  (Just iface) -> do {
-                      traceRn "rnExports: reexport exports:" (ppr $ mi_exports iface)
-                    ; traceRn "rnExports: reexport warnings:" (ppr $ mi_warns iface)
-                    ; return $ mi_warns iface
-                  }
-                  ([]) -> do {
-                      traceRn "rnExports: reexport exports:" "Nothing"
-                    ; traceRn "rnExports: reexport warnings:" "Nothing"
-                    ; return NoWarnings
-                  }-}
-
         ; let export_deprecation_warns = get_export_depr_warns exports
 
         ; let new_tcg_env =
@@ -209,7 +192,7 @@ get_reexp_module_ifaces_wtxts :: [(ModuleName, Maybe WarningTxt)] ->
                                   RnM [(ModIface, Maybe WarningTxt)]
 get_reexp_module_ifaces_wtxts [] = return []
 get_reexp_module_ifaces_wtxts ((mod_name, mayb_wtxt):xs) = do {
-      iface <- loadSrcInterface (text "adding reexport deprecations")
+      iface <- loadSrcInterface (text "load reexp modules")
                                   mod_name False Nothing
     ; ifcs_wtxts <- get_reexp_module_ifaces_wtxts xs
     ; return $ (iface, mayb_wtxt):ifcs_wtxts
