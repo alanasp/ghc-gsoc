@@ -338,8 +338,6 @@ rnImportDecl this_mod
         imp_spec  = ImpDeclSpec { is_mod = imp_mod_name, is_qual = qual_only,
                                   is_dloc = loc, is_as = qual_mod_name }
 
-    --env <- getGlobalRdrEnv
-    --traceRn "env" (ppr env)
     -- filter the imports according to the import declaration
     (new_imp_details, gres) <- filterImports iface imp_spec imp_details
 
@@ -388,16 +386,6 @@ rnImportDecl this_mod
     return (new_imp_decl, gbl_env, imports, mi_hpc iface)
 rnImportDecl _ (L _ (XImportDecl _)) = panic "rnImportDecl"
 
-
-{-filterDeprecReimports :: ModIface -> Maybe (Bool, Located [LIE GhcPs]) ->
-                          TcRn(Maybe (Bool, Located [LIE GhcPs]))
---explicit, so don't filter
-filterDeprecReimports _ imp_details@(Just(False, _)) = return(imp_details)
-filterDeprecReimports iface (Just(True, L _ hiding)) = do {
-      let mod_exports = mi_exports iface
-    ;
-  }
-filterDeprecReimports Nothing = return(Nothing)-}
 
 -- Adds import deprecation warnings if explicitly listed imports are deprecated
 maybeAddWarnsIfDeprecatedImports :: Maybe (Bool, Located [LIE GhcPs]) -> Warnings -> TcRn ()
@@ -1087,21 +1075,6 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
           BadImport | want_hiding -> return ([], [BadImportW])
           _                       -> failLookupWith err
 
-
-{-prune_export_list :: [AvailInfo] -> ModIface -> RnM ([AvailInfo])
-prune_export_list [] _ = return []
-prune_export_list (export:xs) iface = do {
-       let exportNameOcc = (nameOccName . availName) export
-    ;  let isDeprec = case (mi_warn_fn iface exportNameOcc) of
-                        Just _ -> True
-                        Nothing -> False
-    ;  env <- getGlobalRdrEnv
-    ;  let gres = lookupGlobalRdrEnv env exportNameOcc
-    --;  traceRn "prune_export_list: gres" (ppr gres)
-    ;  pruned_tail <- prune_export_list xs iface
-    ;  if isDeprec then return (pruned_tail)
-          else return(export:pruned_tail)
-  }-}
 
 
 type IELookupM = MaybeErr IELookupError
