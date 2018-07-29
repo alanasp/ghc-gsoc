@@ -76,6 +76,8 @@ test('rn071', [extra_files(['Rn071_A.hs', 'Rn071_B.hs'])], multimod_compile, ['r
 test('rn072', [extra_files(['Rn072_A.hs', 'Rn072_B.hs'])], multimod_compile, ['rn072', '-v0'])
 test('rn073', [extra_files(['Rn073_A.hs', 'Rn073_B.hs', 'Rn073_C.hs'])], multimod_compile, ['rn073', '-v0'])
 test('rn074', [extra_files(['Rn074_A.hs', 'Rn074_B.hs', 'Rn074_C.hs'])], multimod_compile, ['rn074', '-v0'])
+test('rn075', [extra_files(['Rn075_A.hs', 'Rn075_B.hs'])], multimod_compile, ['rn075', '-v0'])
+test('rn076', [extra_files(['Rn076_A.hs', 'Rn076_B.hs', 'Rn076_C.hs'])], multimod_compile, ['rn076', '-v0'])
 
 
 test('T17a', normal, compile, [''])

@@ -1,7 +1,7 @@
 module Rn074_A(
   func1,
   T(C),
-  {-# DEPRECATED "Rn073_C shall be imported directly" #-}
+  {-# DEPRECATED "Rn074_C shall be imported directly" #-}
   module Rn074_C
 ) where
 

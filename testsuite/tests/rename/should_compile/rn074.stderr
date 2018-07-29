@@ -1,13 +1,13 @@
 rn074.hs:7:1: warning: [-Wdeprecations (in -Wdefault)]
-    Deprecated: "Rn073_C shall be imported directly"
+    Deprecated: "Rn074_C shall be imported directly"
 
 rn074.hs:8:1: warning: [-Wdeprecations (in -Wdefault)]
     Deprecated: "funcRn074_C is deprecated"
 
 rn074.hs:9:1: warning: [-Wdeprecations (in -Wdefault)]
-    Deprecated: "Rn073_C shall be imported directly"
+    Deprecated: "Rn074_C shall be imported directly"
 
 rn074.hs:11:8: warning: [-Wdeprecations (in -Wdefault)]
     In the use of ‘funcRn074_C’
     (imported from Rn074_A, but defined in Rn074_C):
-    Deprecated: "Rn073_C shall be imported directly"
+    Deprecated: "Rn074_C shall be imported directly"
