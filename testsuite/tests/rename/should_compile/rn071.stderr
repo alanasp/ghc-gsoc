@@ -1,0 +1,5 @@
+
+rn071.hs:9:7: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘bfunc’
+    (imported from Rn071_A, but defined in Rn071_B):
+    Deprecated: "module Rn071_B reexport is deprecated"
