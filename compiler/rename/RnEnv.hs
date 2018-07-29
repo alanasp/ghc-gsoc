@@ -46,8 +46,7 @@ module RnEnv (
 
 import GhcPrelude
 
-import LoadIface        ( loadInterfaceForName, loadSrcInterface_maybe,
-                          loadSrcInterface )
+import LoadIface        ( loadSrcInterface_maybe, loadSrcInterface )
 import IfaceEnv
 import HsSyn
 import RdrName
@@ -1247,15 +1246,10 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
        ; when (wopt Opt_WarnWarningsDeprecations dflags &&
                not (nameIsLocalOrFrom this_mod name)) $
                    -- See Note [Handling of deprecations]
-         do { iface_def <- loadInterfaceForName doc name
-            ; case lookupImpDeprec iface_def gre of
-                Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
-                                   (mk_msg imp_spec txt)
-                Nothing  -> return ()
-            ; iface_imp <- loadSrcInterface (text "load import module")
+         do { -- check only the import module for deprecations as it should
+              -- contain all the warnings from the definition module as well
+              iface_imp <- loadSrcInterface doc
                               (importSpecModule imp_spec) False Nothing
-            ; traceRn "warnIfDeprecated: GlobalRdrElt" (ppr gre)
-            ; traceRn "warnIfDeprecated: imp_spec" (ppr imp_spec)
             ; case lookupImpDeprec iface_imp gre of
                 Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                    (mk_msg imp_spec txt)
