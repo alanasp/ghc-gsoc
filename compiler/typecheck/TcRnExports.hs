@@ -178,19 +178,19 @@ tcRnExports explicit_mod exports
 
 
 get_reexp_warns :: [(ModIface, Maybe WarningTxt)] -> Warnings
-get_reexp_warns [] = NoWarnings
-get_reexp_warns ((iface, Nothing):xs) = (mi_warns iface) `plusWarns`
-                                    (get_reexp_warns xs)
 get_reexp_warns ((iface, Just wtxt):xs) =
   WarnSome (map exp_to_warn (mi_exports iface))
     `plusWarns` (get_reexp_warns xs)
   where
     exp_to_warn export = ((nameOccName . availName) export, wtxt)
+get_reexp_warns _ = NoWarnings
 
 
 get_reexp_module_ifaces_wtxts :: [(ModuleName, Maybe WarningTxt)] ->
                                   RnM [(ModIface, Maybe WarningTxt)]
 get_reexp_module_ifaces_wtxts [] = return []
+get_reexp_module_ifaces_wtxts ((_, Nothing):xs) =
+  get_reexp_module_ifaces_wtxts xs
 get_reexp_module_ifaces_wtxts ((mod_name, mayb_wtxt):xs) = do {
       iface <- loadSrcInterface (text "load reexp modules")
                                   mod_name False Nothing
