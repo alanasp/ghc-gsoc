@@ -46,8 +46,7 @@ module RnEnv (
 
 import GhcPrelude
 
-import LoadIface        ( loadInterfaceForName, loadSrcInterface_maybe,
-                          loadSrcInterface )
+import LoadIface        ( loadInterfaceForName, loadSrcInterface_maybe )
 import IfaceEnv
 import HsSyn
 import RdrName
@@ -1247,18 +1246,21 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
        ; when (wopt Opt_WarnWarningsDeprecations dflags &&
                not (nameIsLocalOrFrom this_mod name)) $
                    -- See Note [Handling of deprecations]
-         do { iface_imp <- loadSrcInterface doc
+         do { iface_imp_mayb <- loadSrcInterface_maybe doc
                             (importSpecModule imp_spec) False Nothing
-            ; case lookupImpDeprec iface_imp gre of
-                Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
-                                   (mk_msg imp_spec txt)
-                Nothing  -> do {
-                      iface_def <- loadInterfaceForName doc name
-                    ; case lookupImpDeprec iface_def gre of
-                        Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
-                                    (mk_msg imp_spec txt)
-                        Nothing  -> return ()
-                  }
+            ; case iface_imp_mayb of
+                Succeeded iface_imp ->
+                  case lookupImpDeprec iface_imp gre of
+                    Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
+                                       (mk_msg imp_spec txt)
+                    Nothing  -> do {
+                          iface_def <- loadInterfaceForName doc name
+                        ; case lookupImpDeprec iface_def gre of
+                            Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
+                                        (mk_msg imp_spec txt)
+                            Nothing  -> return ()
+                      }
+                Failed _ -> return ()
          }
     }
   where
@@ -1282,13 +1284,17 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
 tryPickNonDeprecImp :: OccName -> [ImportSpec] -> RnM(Maybe ImportSpec)
 tryPickNonDeprecImp _ [] = return Nothing
 tryPickNonDeprecImp occ (imp_spec:iss) = do {
-        iface_imp <- loadSrcInterface (text "load import module")
+        iface_imp_mayb <- loadSrcInterface_maybe (text "load import module")
                   (importSpecModule imp_spec) False Nothing
-     ;  let isDeprec = case (mi_warn_fn iface_imp occ) of
-                         Just _ -> True
-                         Nothing -> False
-    ;   if isDeprec then tryPickNonDeprecImp occ iss
-                    else return $ Just imp_spec
+     ;  case iface_imp_mayb of
+          Succeeded iface_imp -> do {
+                let isDeprec = case (mi_warn_fn iface_imp occ) of
+                                 Just _ -> True
+                                 Nothing -> False
+             ;  if isDeprec then tryPickNonDeprecImp occ iss
+                            else return $ Just imp_spec
+            }
+          Failed _ -> return Nothing
   }
 
 

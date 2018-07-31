@@ -9,4 +9,3 @@ import Rn075_B
 import Prelude hiding ( head )  -- to force head to be deprecated
 
 f = head
-

@@ -192,10 +192,14 @@ get_reexp_module_ifaces_wtxts [] = return []
 get_reexp_module_ifaces_wtxts ((_, Nothing):xs) =
   get_reexp_module_ifaces_wtxts xs
 get_reexp_module_ifaces_wtxts ((mod_name, mayb_wtxt):xs) = do {
-      iface <- loadSrcInterface (text "load reexp modules")
+      iface_mayb <- loadSrcInterface_maybe (text "load reexp modules")
                                   mod_name False Nothing
-    ; ifcs_wtxts <- get_reexp_module_ifaces_wtxts xs
-    ; return $ (iface, mayb_wtxt):ifcs_wtxts
+    ; case iface_mayb of
+        Succeeded iface -> do {
+            ; ifcs_wtxts <- get_reexp_module_ifaces_wtxts xs
+            ; return $ (iface, mayb_wtxt):ifcs_wtxts
+          }
+        Failed _ -> return []
   }
 
 
