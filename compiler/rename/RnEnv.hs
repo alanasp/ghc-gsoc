@@ -1239,7 +1239,9 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
   | otherwise
   = do { dflags <- getDynFlags
        ; this_mod <- getModule
+       -- We try to find if it was possible to import a symbol in a non-deprecated manner
        ; mayb_imp_spec <- tryPickNonDeprecImp occ iss
+       -- If we don't find any non-deprecated way, pick the first one
        ; let imp_spec = case mayb_imp_spec of
                           Just is -> is
                           Nothing -> head iss
@@ -1250,9 +1252,11 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
                             (importSpecModule imp_spec) False Nothing
             ; case iface_imp_mayb of
                 Succeeded iface_imp ->
+                  -- Look-up if the exporting module has warnings as it should take precedence
                   case lookupImpDeprec iface_imp gre of
                     Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                        (mk_msg imp_spec txt)
+                    -- Otherwise, check the defining module for warnings
                     Nothing  -> do {
                           iface_def <- loadInterfaceForName doc name
                         ; case lookupImpDeprec iface_def gre of
@@ -1281,6 +1285,7 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
               | otherwise = text ", but defined in" <+> ppr name_mod
 
 
+-- Tries to find if OccName appears non-deprecated in at least one ImportSpec
 tryPickNonDeprecImp :: OccName -> [ImportSpec] -> RnM(Maybe ImportSpec)
 tryPickNonDeprecImp _ [] = return Nothing
 tryPickNonDeprecImp occ (imp_spec:iss) = do {

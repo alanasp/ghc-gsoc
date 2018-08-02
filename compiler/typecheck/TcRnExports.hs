@@ -176,7 +176,7 @@ tcRnExports explicit_mod exports
         ; failIfErrsM
         ; return new_tcg_env }
 
-
+-- Returns Warnings structure from every export in each interface
 get_reexp_warns :: [(ModIface, Maybe WarningTxt)] -> Warnings
 get_reexp_warns ((iface, Just wtxt):xs) =
   WarnSome (map exp_to_warn (mi_exports iface))
@@ -185,7 +185,7 @@ get_reexp_warns ((iface, Just wtxt):xs) =
     exp_to_warn export = ((nameOccName . availName) export, wtxt)
 get_reexp_warns _ = NoWarnings
 
-
+-- Returns interfaces of deprecated reexported modules with their warning
 get_reexp_module_ifaces_wtxts :: [(ModuleName, Maybe WarningTxt)] ->
                                   RnM [(ModIface, Maybe WarningTxt)]
 get_reexp_module_ifaces_wtxts [] = return []
@@ -202,7 +202,7 @@ get_reexp_module_ifaces_wtxts ((mod_name, mayb_wtxt):xs) = do {
         Failed _ -> return []
   }
 
-
+-- Returns a list of reexported module names and warnings
 get_reexp_module_names_wtxts :: Maybe (Located [LIE GhcPs]) ->
                               [(ModuleName, Maybe WarningTxt)]
 get_reexp_module_names_wtxts Nothing = []
@@ -211,12 +211,14 @@ get_reexp_module_names_wtxts (Just (L x (lie:lie_tail))) =
   (get_mod_name_if_reexp lie) ++
   (get_reexp_module_names_wtxts (Just (L x lie_tail)))
 
-
+-- Returns a singleton list element with reexported module name and warning
 get_mod_name_if_reexp :: LIE GhcPs -> [(ModuleName, Maybe WarningTxt)]
 get_mod_name_if_reexp (L _ (IEModuleContents mayb_wtxt _ loc_mod_name)) =
   [(unLoc loc_mod_name, mayb_wtxt)]
 get_mod_name_if_reexp _                                             = []
 
+
+-- Extracts warnings from a wrapped list of located imports/exports.
 get_export_depr_warns :: Maybe (Located [LIE GhcPs]) -> Warnings
 get_export_depr_warns Nothing = NoWarnings
 get_export_depr_warns (Just (L _ [])) = NoWarnings
@@ -224,6 +226,9 @@ get_export_depr_warns (Just (L x (lie:lie_tail))) = (get_lie_depr_warns lie)
   `plusWarns` (get_export_depr_warns (Just (L x lie_tail)))
 
 
+-- Extracts Warnings from located import/export structure.
+-- IEModuleContents is disregarded here because module reexports
+-- are handled elsewhere.
 get_lie_depr_warns :: LIE GhcPs -> Warnings
 get_lie_depr_warns (L _ ie@(IEVar                       (Just wtxt) _ _)) =
   WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
@@ -233,8 +238,6 @@ get_lie_depr_warns (L _ ie@(IEThingAll                  (Just wtxt) _ _)) =
   WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
 get_lie_depr_warns (L _ ie@(IEThingWith           (Just wtxt) _ _ _ _ _)) =
   WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
---get_lie_depr_warns (L _ ie@(IEModuleContents (Just wtxt) _ loc_mod_name)) =
---  warn_all_exports_from_module_name (unLoc loc_mod_name)
 get_lie_depr_warns _                                             = NoWarnings
 
 

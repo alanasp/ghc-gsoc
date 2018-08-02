@@ -176,6 +176,9 @@ type LIE pass = Located (IE pass)
         -- For details on above see note [Api annotations] in ApiAnnotation
 
 -- | Imported or exported entity.
+-- Maybe WarningTxt indicates if the exported entity is deprecated.
+-- For imported entities, this always takes a value of Nothing and the deprecation fact is
+-- deduced from the corresponding ModIface Warnings field.
 data IE pass
   = IEVar       (Maybe WarningTxt) (XIEVar pass) (LIEWrappedName (IdP pass))
         -- ^ Imported or Exported Variable
