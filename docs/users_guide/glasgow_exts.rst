@@ -14207,7 +14207,7 @@ other compilers.
 The ``WARNING`` pragma allows you to attach an arbitrary warning to a
 particular function, class, or type. A ``DEPRECATED`` pragma lets you
 specify that a particular function, class, or type is deprecated. There
-are two ways of using these pragmas.
+are multiple ways of using these pragmas.
 
 -  You can work on an entire module thus: ::
 
@@ -14249,6 +14249,39 @@ defining module, (b) defining a method in a class instance, and (c) uses
 in an export list. The latter reduces spurious complaints within a
 library in which one module gathers together and re-exports the exports
 of several others.
+
+Alternatively, you can use ``DEPRECATED`` pragma to deprecate an export in 
+a module export list. It would be used as follows: ::
+
+          module Wibble (
+		{-# DEPRECATED "import foo from Wobble instead" #-}
+		foo, 
+		{-# DEPRECATED "type E will no longer be exported from here" #-}
+		E(..), 
+		{-# DEPRECATED "import Wobble directly, please" #-}
+		module Wobble
+	  ) where
+            ...
+
+There are some substantial functionality differences in how the export 
+deprecations are hanndled, when compared to regular deprecations: 
+
+-  GHC will not report a deprecation if it is possible to import an item 
+   in a non-deprecated way. In essence, if you import modules ``A``, 
+   a ``B`` and ``C`` all of which reexport ``func`` defined in ``D``
+   and ``func`` export is deprecated only in ``A`` and ``C``, you 
+   wouldn't get a warning because ``func`` isn't deprecated in ``B``
+
+-  An exception to the above is when you explicitly import a deprecated 
+   export. This is done because once a deprecated export is removed, 
+   your code would break. 
+
+-  If a symbol is deprecated in a defining module and in an exporting 
+   one, the export deprecation takes precedence.
+
+-  When you depreacte a module export, message is attached to all of 
+   its exports and from there on handled as usual. 
+
 
 You can suppress the warnings with the flag
 :ghc-flag:`-Wno-warnings-deprecations <-Wwarnings-deprecations>`.
