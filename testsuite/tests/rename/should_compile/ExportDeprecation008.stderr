@@ -1,0 +1,4 @@
+ExportDeprecation008.hs:14:8: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘func_C’
+    (imported from ExportDeprecation008_B, but defined in ExportDeprecation008_C):
+    Deprecated: "ExportDeprecation008_C shall be imported directly"

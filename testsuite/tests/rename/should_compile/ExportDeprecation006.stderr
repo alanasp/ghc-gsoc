@@ -1,0 +1,13 @@
+ExportDeprecation006.hs:7:1: warning: [-Wdeprecations (in -Wdefault)]
+    Deprecated: "ExportDeprecation006_C shall be imported directly"
+
+ExportDeprecation006.hs:8:1: warning: [-Wdeprecations (in -Wdefault)]
+    Deprecated: "func_C is deprecated"
+
+ExportDeprecation006.hs:9:1: warning: [-Wdeprecations (in -Wdefault)]
+    Deprecated: "ExportDeprecation006_C shall be imported directly"
+
+ExportDeprecation006.hs:11:8: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘func_C’
+    (imported from ExportDeprecation006_A, but defined in ExportDeprecation006_C):
+    Deprecated: "ExportDeprecation006_C shall be imported directly"

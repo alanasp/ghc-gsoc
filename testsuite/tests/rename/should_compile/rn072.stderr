@@ -1,4 +1,0 @@
-rn072.hs:9:7: warning: [-Wdeprecations (in -Wdefault)]
-    In the use of ‘bfunc’
-    (imported from Rn072_A, but defined in Rn072_B):
-    Deprecated: "bfunc export from Rn072_B is deprecated"

@@ -1,0 +1,4 @@
+ExportDeprecation007.hs:11:5: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘head’
+    (imported from ExportDeprecation007_B, but defined in GHC.List):
+    Deprecated: "B: head is deprecated "

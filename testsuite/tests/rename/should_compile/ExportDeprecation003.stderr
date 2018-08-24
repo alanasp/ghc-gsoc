@@ -1,0 +1,5 @@
+
+ExportDeprecation003.hs:9:7: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘bfunc’
+    (imported from ExportDeprecation003_A, but defined in ExportDeprecation003_B):
+    Deprecated: "module ExportDeprecation003_B reexport is deprecated"

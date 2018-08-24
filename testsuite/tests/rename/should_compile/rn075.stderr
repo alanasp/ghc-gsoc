@@ -1,4 +1,0 @@
-rn075.hs:11:5: warning: [-Wdeprecations (in -Wdefault)]
-    In the use of ‘head’
-    (imported from Rn075_B, but defined in GHC.List):
-    Deprecated: "B: head is deprecated "

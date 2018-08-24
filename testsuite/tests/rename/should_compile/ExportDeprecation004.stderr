@@ -1,0 +1,4 @@
+ExportDeprecation004.hs:9:7: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘bfunc’
+    (imported from ExportDeprecation004_A, but defined in ExportDeprecation004_B):
+    Deprecated: "bfunc export from ExportDeprecation004_B is deprecated"

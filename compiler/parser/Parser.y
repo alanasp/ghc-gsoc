@@ -859,17 +859,17 @@ exp_doc :: { OrdList (LIE GhcPs) }
    -- No longer allow things like [] and (,,,) to be exported
    -- They are built in syntax, always available
 export  :: { OrdList (LIE GhcPs) }
-        :  maybeDeprWarning qcname_ext export_subspec
+        :  maybeExportDeprecation qcname_ext export_subspec
                             {% mkModuleImpExp $1 $2 (snd $ unLoc $3)
                               >>= \ie -> amsu (sLL $2 $> ie) (fst $ unLoc $3) }
-        |  maybeDeprWarning 'module' modid
+        |  maybeExportDeprecation 'module' modid
                     {% amsu (sLL $2 $> (IEModuleContents $1 noExt $3))
                                             [mj AnnModule $2] }
-        |  maybeDeprWarning 'pattern' qcon
+        |  maybeExportDeprecation 'pattern' qcon
                   {% amsu (sLL $2 $> (IEVar $1 noExt (sLL $2 $> (IEPattern $3))))
                                             [mj AnnPattern $2] }
 
-maybeDeprWarning  :: { Maybe WarningTxt }
+maybeExportDeprecation  :: { Maybe WarningTxt }
         : '{-# DEPRECATED' STRING '#-}'
               { Just $ DeprecatedTxt ( noLoc NoSourceText )
                   [sL1 $2 $ StringLiteral (NoSourceText) (getSTRING $2)] }

@@ -70,14 +70,14 @@ test('rn067', [extra_files(['Rn067_A.hs'])], multimod_compile, ['rn067', '-v0'])
 
 test('rn068', normal, compile, [''])
 
-test('rn069', [extra_files(['Rn069_A.hs'])], multimod_compile, ['rn069', '-v0'])
-test('rn070', [extra_files(['Rn070_A.hs'])], multimod_compile, ['rn070', '-v0'])
-test('rn071', [extra_files(['Rn071_A.hs', 'Rn071_B.hs'])], multimod_compile, ['rn071', '-v0'])
-test('rn072', [extra_files(['Rn072_A.hs', 'Rn072_B.hs'])], multimod_compile, ['rn072', '-v0'])
-test('rn073', [extra_files(['Rn073_A.hs', 'Rn073_B.hs', 'Rn073_C.hs'])], multimod_compile, ['rn073', '-v0'])
-test('rn074', [extra_files(['Rn074_A.hs', 'Rn074_B.hs', 'Rn074_C.hs'])], multimod_compile, ['rn074', '-v0'])
-test('rn075', [extra_files(['Rn075_A.hs', 'Rn075_B.hs'])], multimod_compile, ['rn075', '-v0'])
-test('rn076', [extra_files(['Rn076_A.hs', 'Rn076_B.hs', 'Rn076_C.hs'])], multimod_compile, ['rn076', '-v0'])
+test('ExportDeprecation001', [extra_files(['ExportDeprecation001_A.hs'])], multimod_compile, ['ExportDeprecation001', '-v0'])
+test('ExportDeprecation002', [extra_files(['ExportDeprecation002_A.hs'])], multimod_compile, ['ExportDeprecation002', '-v0'])
+test('ExportDeprecation003', [extra_files(['ExportDeprecation003_A.hs', 'ExportDeprecation003_B.hs'])], multimod_compile, ['ExportDeprecation003', '-v0'])
+test('ExportDeprecation004', [extra_files(['ExportDeprecation004_A.hs', 'ExportDeprecation004_B.hs'])], multimod_compile, ['ExportDeprecation004', '-v0'])
+test('ExportDeprecation005', [extra_files(['ExportDeprecation005_A.hs', 'ExportDeprecation005_B.hs', 'ExportDeprecation005_C.hs'])], multimod_compile, ['ExportDeprecation005', '-v0'])
+test('ExportDeprecation006', [extra_files(['ExportDeprecation006_A.hs', 'ExportDeprecation006_B.hs', 'ExportDeprecation006_C.hs'])], multimod_compile, ['ExportDeprecation006', '-v0'])
+test('ExportDeprecation007', [extra_files(['ExportDeprecation007_A.hs', 'ExportDeprecation007_B.hs'])], multimod_compile, ['ExportDeprecation007', '-v0'])
+test('ExportDeprecation008', [extra_files(['ExportDeprecation008_A.hs', 'ExportDeprecation008_B.hs', 'ExportDeprecation008_C.hs'])], multimod_compile, ['ExportDeprecation008', '-v0'])
 
 
 test('T17a', normal, compile, [''])

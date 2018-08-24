@@ -1,5 +1,0 @@
-rn073.hs:7:1: warning: [-Wdeprecations (in -Wdefault)]
-    Deprecated: "Rn073_C shall be imported directly"
-
-rn073.hs:9:1: warning: [-Wdeprecations (in -Wdefault)]
-    Deprecated: "Rn073_C shall be imported directly"

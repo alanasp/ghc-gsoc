@@ -1,6 +1,0 @@
-rn076.hs:14:8: warning: [-Wdeprecations (in -Wdefault)]
-    In the use of ‘funcRn076_C’
-    (imported from Rn076_B, but defined in Rn076_C):
-    Deprecated: "Rn076_C shall be imported directly"
-
-
