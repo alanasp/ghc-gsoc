@@ -136,7 +136,7 @@ tcRnExports explicit_mod exports
                  | explicit_mod = exports
                  | ghcLink dflags == LinkInMemory = Nothing
                  | otherwise
-                          = Just (noLoc [noLoc (IEVar Nothing noExt
+                          = Just (noLoc [noLoc (IEVar noExt Nothing
                                      (noLoc (IEName $ noLoc main_RDR_Unqual)))])
                         -- ToDo: the 'noLoc' here is unhelpful if 'main'
                         --       turns out to be out of scope
@@ -213,7 +213,7 @@ get_reexp_module_names_wtxts (Just (L x (lie:lie_tail))) =
 
 -- Returns a singleton list element with reexported module name and warning
 get_mod_name_if_reexp :: LIE GhcPs -> [(ModuleName, Maybe WarningTxt)]
-get_mod_name_if_reexp (L _ (IEModuleContents mayb_wtxt _ loc_mod_name)) =
+get_mod_name_if_reexp (L _ (IEModuleContents _ mayb_wtxt loc_mod_name)) =
   [(unLoc loc_mod_name, mayb_wtxt)]
 get_mod_name_if_reexp _                                             = []
 
@@ -230,13 +230,13 @@ get_export_depr_warns (Just (L x (lie:lie_tail))) = (get_lie_depr_warns lie)
 -- IEModuleContents is disregarded here because module reexports
 -- are handled elsewhere.
 get_lie_depr_warns :: LIE GhcPs -> Warnings
-get_lie_depr_warns (L _ ie@(IEVar                       (Just wtxt) _ _)) =
+get_lie_depr_warns (L _ ie@(IEVar                       _ (Just wtxt) _)) =
   WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
-get_lie_depr_warns (L _ ie@(IEThingAbs                  (Just wtxt) _ _)) =
+get_lie_depr_warns (L _ ie@(IEThingAbs                  _ (Just wtxt) _)) =
   WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
-get_lie_depr_warns (L _ ie@(IEThingAll                  (Just wtxt) _ _)) =
+get_lie_depr_warns (L _ ie@(IEThingAll                  _ (Just wtxt) _)) =
   WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
-get_lie_depr_warns (L _ ie@(IEThingWith           (Just wtxt) _ _ _ _ _)) =
+get_lie_depr_warns (L _ ie@(IEThingWith           _ (Just wtxt) _ _ _ _)) =
   WarnSome [(rdrNameOcc $ ieName ie, wtxt)]
 get_lie_depr_warns _                                             = NoWarnings
 
@@ -340,7 +340,7 @@ exports_from_avail (Just (L _ rdr_items)) rdr_env imports this_mod
                        (vcat [ ppr mod
                              , ppr new_exports ])
 
-             ; return (ExportAccum (((L loc (IEModuleContents Nothing noExt
+             ; return (ExportAccum (((L loc (IEModuleContents noExt Nothing
                                       (L lm mod)))
                                     , new_exports) : ie_avails) occs') }
 
@@ -364,19 +364,19 @@ exports_from_avail (Just (L _ rdr_items)) rdr_env imports this_mod
     lookup_ie :: IE GhcPs -> RnM (IE GhcRn, AvailInfo)
     lookup_ie (IEVar _ _ (L l rdr))
         = do (name, avail) <- lookupGreAvailRn $ ieWrappedName rdr
-             return (IEVar Nothing noExt (L l (replaceWrappedName rdr name))
+             return (IEVar noExt Nothing (L l (replaceWrappedName rdr name))
                         , avail)
 
     lookup_ie (IEThingAbs _ _ (L l rdr))
         = do (name, avail) <- lookupGreAvailRn $ ieWrappedName rdr
-             return (IEThingAbs Nothing noExt
+             return (IEThingAbs noExt Nothing
                       (L l (replaceWrappedName rdr name)), avail)
 
     lookup_ie ie@(IEThingAll _ _ n')
         = do
             (n, avail, flds) <- lookup_ie_all ie n'
             let name = unLoc n
-            return (IEThingAll Nothing noExt (replaceLWrappedName n' (unLoc n))
+            return (IEThingAll noExt Nothing (replaceLWrappedName n' (unLoc n))
                    , AvailTC name (name:avail) flds)
 
 
@@ -389,7 +389,7 @@ exports_from_avail (Just (L _ rdr_items)) rdr_env imports this_mod
                 NoIEWildcard -> return (lname, [], [])
                 IEWildcard _ -> lookup_ie_all ie l
             let name = unLoc lname
-            return (IEThingWith Nothing noExt (replaceLWrappedName l name) wc
+            return (IEThingWith noExt Nothing (replaceLWrappedName l name) wc
                       subs (flds ++ (map noLoc all_flds)),
                     AvailTC name (name : avails ++ all_avail)
                                  (map unLoc flds ++ all_flds))

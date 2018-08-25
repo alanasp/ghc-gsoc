@@ -180,10 +180,10 @@ type LIE pass = Located (IE pass)
 -- For imported entities, this always takes a value of Nothing and the deprecation fact is
 -- deduced from the corresponding ModIface Warnings field.
 data IE pass
-  = IEVar       (Maybe WarningTxt) (XIEVar pass) (LIEWrappedName (IdP pass))
+  = IEVar       (XIEVar pass) (Maybe WarningTxt) (LIEWrappedName (IdP pass))
         -- ^ Imported or Exported Variable
 
-  | IEThingAbs  (Maybe WarningTxt) (XIEThingAbs pass) (LIEWrappedName (IdP pass))
+  | IEThingAbs  (XIEThingAbs pass) (Maybe WarningTxt) (LIEWrappedName (IdP pass))
         -- ^ Imported or exported Thing with Absent list
         --
         -- The thing is a Class/Type (can't tell)
@@ -192,7 +192,7 @@ data IE pass
 
         -- For details on above see note [Api annotations] in ApiAnnotation
         -- See Note [Located RdrNames] in HsExpr
-  | IEThingAll  (Maybe WarningTxt) (XIEThingAll pass) (LIEWrappedName (IdP pass))
+  | IEThingAll  (XIEThingAll pass) (Maybe WarningTxt) (LIEWrappedName (IdP pass))
         -- ^ Imported or exported Thing with All imported or exported
         --
         -- The thing is a Class/Type and the All refers to methods/constructors
@@ -204,7 +204,7 @@ data IE pass
         -- For details on above see note [Api annotations] in ApiAnnotation
         -- See Note [Located RdrNames] in HsExpr
 
-  | IEThingWith (Maybe WarningTxt) (XIEThingWith pass)
+  | IEThingWith (XIEThingWith pass) (Maybe WarningTxt)
                 (LIEWrappedName (IdP pass))
                 IEWildcard
                 [LIEWrappedName (IdP pass)]
@@ -219,7 +219,7 @@ data IE pass
         --                                   'ApiAnnotation.AnnType'
 
         -- For details on above see note [Api annotations] in ApiAnnotation
-  | IEModuleContents  (Maybe WarningTxt) (XIEModuleContents pass) (Located ModuleName)
+  | IEModuleContents  (XIEModuleContents pass) (Maybe WarningTxt) (Located ModuleName)
         -- ^ Imported or exported module contents
         --
         -- (Export Only)

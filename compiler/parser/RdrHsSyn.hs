@@ -1659,12 +1659,12 @@ mkModuleImpExp maybeWarnTxt (L l specname) subs =
   case subs of
     ImpExpAbs
       | isVarNameSpace (rdrNameSpace name)
-                         -> return $ IEVar maybeWarnTxt noExt
+                         -> return $ IEVar noExt maybeWarnTxt
                                       (L l (ieNameFromSpec specname))
-      | otherwise        -> IEThingAbs maybeWarnTxt noExt . L l <$> nameT
-    ImpExpAll            -> IEThingAll maybeWarnTxt noExt . L l <$> nameT
+      | otherwise        -> IEThingAbs noExt maybeWarnTxt . L l <$> nameT
+    ImpExpAll            -> IEThingAll noExt maybeWarnTxt . L l <$> nameT
     ImpExpList xs        ->
-      (\newName -> IEThingWith maybeWarnTxt noExt (L l newName)
+      (\newName -> IEThingWith noExt maybeWarnTxt (L l newName)
                     NoIEWildcard (wrapped xs) []) <$> nameT
     ImpExpAllWith xs                       ->
       do allowed <- extension patternSynonymsEnabled
@@ -1674,7 +1674,7 @@ mkModuleImpExp maybeWarnTxt (L l specname) subs =
                 pos   = maybe NoIEWildcard IEWildcard
                           (findIndex isImpExpQcWildcard withs)
                 ies   = wrapped $ filter (not . isImpExpQcWildcard . unLoc) xs
-            in (\newName -> IEThingWith maybeWarnTxt noExt
+            in (\newName -> IEThingWith noExt maybeWarnTxt
                               (L l newName) pos ies []) <$> nameT
           else parseErrorSDoc l
             (text "Illegal export form (use PatternSynonyms to enable)")

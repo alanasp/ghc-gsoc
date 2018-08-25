@@ -973,7 +973,7 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
       case ie of
         IEVar _ _ (L l n) -> do
             (name, avail, _) <- lookup_name $ ieWrappedName n
-            return ([(IEVar Nothing noExt (L l (replaceWrappedName n name)),
+            return ([(IEVar noExt Nothing (L l (replaceWrappedName n name)),
                                                   trimAvail avail name)], [])
 
         IEThingAll _ _ (L l tc) -> do
@@ -992,7 +992,7 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
                             | otherwise
                             -> []
 
-                renamed_ie = IEThingAll Nothing noExt (L l (replaceWrappedName tc name))
+                renamed_ie = IEThingAll noExt Nothing (L l (replaceWrappedName tc name))
                 sub_avails = case avail of
                                Avail {}              -> []
                                AvailTC name2 subs fs -> [(renamed_ie, AvailTC name2 (subs \\ [name]) fs)]
@@ -1036,7 +1036,7 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
                case mb_parent of
                  -- non-associated ty/cls
                  Nothing
-                   -> return ([(IEThingWith Nothing noExt (L l name') wc childnames'
+                   -> return ([(IEThingWith noExt Nothing (L l name') wc childnames'
                                                                  childflds,
                                AvailTC name (name:map unLoc childnames) (map unLoc childflds))],
                               [])
@@ -1045,10 +1045,10 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
                          -- childnames' = postrn_ies childnames
                  -- associated ty
                  Just parent
-                   -> return ([(IEThingWith Nothing noExt (L l name') wc childnames'
+                   -> return ([(IEThingWith noExt Nothing (L l name') wc childnames'
                                                            childflds,
                                 AvailTC name (map unLoc childnames) (map unLoc childflds)),
-                               (IEThingWith Nothing noExt (L l name') wc childnames'
+                               (IEThingWith noExt Nothing (L l name') wc childnames'
                                                            childflds,
                                 AvailTC parent [name] [])],
                               [])
@@ -1061,9 +1061,9 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
 
       where
         mkIEThingAbs tc l (n, av, Nothing    )
-          = (IEThingAbs Nothing noExt (L l (replaceWrappedName tc n)), trimAvail av n)
+          = (IEThingAbs noExt Nothing (L l (replaceWrappedName tc n)), trimAvail av n)
         mkIEThingAbs tc l (n, _,  Just parent)
-          = (IEThingAbs Nothing noExt (L l (replaceWrappedName tc n))
+          = (IEThingAbs noExt Nothing (L l (replaceWrappedName tc n))
              , AvailTC parent [n] [])
 
         handle_bad_import m = catchIELookup m $ \err -> case err of
@@ -1518,25 +1518,25 @@ printMinimalImports imports_w_usage
     -- we want to say "T(..)", but if we're importing only a subset we want
     -- to say "T(A,B,C)".  So we have to find out what the module exports.
     to_ie _ (Avail n)
-       = [IEVar Nothing noExt (to_ie_post_rn $ noLoc n)]
+       = [IEVar noExt Nothing (to_ie_post_rn $ noLoc n)]
     to_ie _ (AvailTC n [m] [])
-       | n==m = [IEThingAbs Nothing noExt (to_ie_post_rn $ noLoc n)]
+       | n==m = [IEThingAbs noExt Nothing (to_ie_post_rn $ noLoc n)]
     to_ie iface (AvailTC n ns fs)
       = case [(xs,gs) |  AvailTC x xs gs <- mi_exports iface
                  , x == n
                  , x `elem` xs    -- Note [Partial export]
                  ] of
-           [xs] | all_used xs -> [IEThingAll Nothing noExt (to_ie_post_rn $ noLoc n)]
+           [xs] | all_used xs -> [IEThingAll noExt Nothing (to_ie_post_rn $ noLoc n)]
                 | otherwise   ->
-                   [IEThingWith Nothing noExt (to_ie_post_rn $ noLoc n) NoIEWildcard
+                   [IEThingWith noExt Nothing (to_ie_post_rn $ noLoc n) NoIEWildcard
                                 (map (to_ie_post_rn . noLoc) (filter (/= n) ns))
                                 (map noLoc fs)]
                                           -- Note [Overloaded field import]
            _other | all_non_overloaded fs
-                           -> map (IEVar Nothing noExt . to_ie_post_rn_var . noLoc)
+                           -> map (IEVar noExt Nothing . to_ie_post_rn_var . noLoc)
                                 $ ns ++ map flSelector fs
                   | otherwise ->
-                      [IEThingWith Nothing noExt (to_ie_post_rn $ noLoc n)
+                      [IEThingWith noExt Nothing (to_ie_post_rn $ noLoc n)
                                 NoIEWildcard
                                 (map (to_ie_post_rn . noLoc) (filter (/= n) ns))
                                 (map noLoc fs)]
@@ -1679,7 +1679,7 @@ dodgyMsg kind tc ie
           text "but it has none" ]
 
 dodgyMsgInsert :: forall p . IdP (GhcPass p) -> IE (GhcPass p)
-dodgyMsgInsert tc = IEThingAll Nothing noExt ii
+dodgyMsgInsert tc = IEThingAll noExt Nothing ii
   where
     ii :: LIEWrappedName (IdP (GhcPass p))
     ii = noLoc (IEName $ noLoc tc)

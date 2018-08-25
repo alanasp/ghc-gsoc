@@ -863,10 +863,10 @@ export  :: { OrdList (LIE GhcPs) }
                             {% mkModuleImpExp $1 $2 (snd $ unLoc $3)
                               >>= \ie -> amsu (sLL $2 $> ie) (fst $ unLoc $3) }
         |  maybeExportDeprecation 'module' modid
-                    {% amsu (sLL $2 $> (IEModuleContents $1 noExt $3))
+                    {% amsu (sLL $2 $> (IEModuleContents noExt $1 $3))
                                             [mj AnnModule $2] }
         |  maybeExportDeprecation 'pattern' qcon
-                  {% amsu (sLL $2 $> (IEVar $1 noExt (sLL $2 $> (IEPattern $3))))
+                  {% amsu (sLL $2 $> (IEVar noExt $1 (sLL $2 $> (IEPattern $3))))
                                             [mj AnnPattern $2] }
 
 maybeExportDeprecation  :: { Maybe WarningTxt }
