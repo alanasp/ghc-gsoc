@@ -120,8 +120,8 @@
    [((,)
      ({ T14189.hs:3:3-15 }
       (IEThingWith
-       (Nothing)
        (NoExt)
+       (Nothing)
        ({ T14189.hs:3:3-8 }
         (IEName
          ({ T14189.hs:3:3-8 }
