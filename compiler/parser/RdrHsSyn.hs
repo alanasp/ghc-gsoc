@@ -1654,7 +1654,8 @@ data ImpExpQcSpec = ImpExpQcName (Located RdrName)
                   | ImpExpQcType (Located RdrName)
                   | ImpExpQcWildcard
 
-mkModuleImpExp :: Maybe WarningTxt-> Located ImpExpQcSpec -> ImpExpSubSpec -> P (IE GhcPs)
+mkModuleImpExp :: Maybe WarningTxt-> Located ImpExpQcSpec ->
+                    ImpExpSubSpec -> P (IE GhcPs)
 mkModuleImpExp maybeWarnTxt (L l specname) subs =
   case subs of
     ImpExpAbs

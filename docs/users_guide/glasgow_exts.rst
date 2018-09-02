@@ -14250,37 +14250,37 @@ in an export list. The latter reduces spurious complaints within a
 library in which one module gathers together and re-exports the exports
 of several others.
 
-Alternatively, you can use ``DEPRECATED`` pragma to deprecate an export in 
+Alternatively, you can use ``DEPRECATED`` pragma to deprecate an export in
 a module export list. It would be used as follows: ::
 
           module Wibble (
 		{-# DEPRECATED "import foo from Wobble instead" #-}
-		foo, 
+		foo,
 		{-# DEPRECATED "type E will no longer be exported from here" #-}
-		E(..), 
+		E(..),
 		{-# DEPRECATED "import Wobble directly, please" #-}
 		module Wobble
 	  ) where
             ...
 
-There are some substantial functionality differences in how the export 
-deprecations are hanndled, when compared to regular deprecations: 
+There are some additional points in how the export
+deprecations are handled, when compared to regular deprecations:
 
--  GHC will not report a deprecation if it is possible to import an item 
-   in a non-deprecated way. In essence, if you import modules ``A``, 
+-  GHC will not report a deprecation if it is possible to import an item
+   in a non-deprecated way. In essence, if you import modules ``A``,
    a ``B`` and ``C`` all of which reexport ``func`` defined in ``D``
-   and ``func`` export is deprecated only in ``A`` and ``C``, you 
-   wouldn't get a warning because ``func`` isn't deprecated in ``B``
+   and ``func`` export is deprecated only in ``A`` and ``C``, you
+   wouldn't get a warning because ``func`` isn't deprecated in ``B``.
 
--  An exception to the above is when you explicitly import a deprecated 
-   export. This is done because once a deprecated export is removed, 
-   your code would break. 
+-  An exception to the above is when you explicitly import a deprecated
+   export. This is done because once a deprecated export is removed,
+   your code would break.
 
--  If a symbol is deprecated in a defining module and in an exporting 
+-  If a symbol is deprecated in a defining module and in an exporting
    one, the export deprecation takes precedence.
 
--  When you depreacte a module export, message is attached to all of 
-   its exports and from there on handled as usual. 
+-  When you deprecate a module export, all of its exports will be considered
+   deprecated with the same warning message.
 
 
 You can suppress the warnings with the flag

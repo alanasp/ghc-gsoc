@@ -1239,7 +1239,8 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
   | otherwise
   = do { dflags <- getDynFlags
        ; this_mod <- getModule
-       -- We try to find if it was possible to import a symbol in a non-deprecated manner
+       -- We try to find if it was possible to import a symbol
+       -- in a non-deprecated manner
        ; mayb_imp_spec <- tryPickNonDeprecImp occ iss
        -- If we don't find any non-deprecated way, pick the first one
        ; let imp_spec = case mayb_imp_spec of
@@ -1252,7 +1253,8 @@ warnIfDeprecated gre@(GRE { gre_name = name, gre_imp = iss })
                             (importSpecModule imp_spec) False Nothing
             ; case iface_imp_mayb of
                 Succeeded iface_imp ->
-                  -- Look-up if the exporting module has warnings as it should take precedence
+                  -- Look-up if the exporting module has warnings
+                  -- as it should take precedence
                   case lookupImpDeprec iface_imp gre of
                     Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations)
                                        (mk_msg imp_spec txt)

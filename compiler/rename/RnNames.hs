@@ -365,7 +365,8 @@ rnImportDecl this_mod
             }
         imports = calculateAvails dflags iface mod_safe' want_boot (ImportedByUser imv)
 
-    -- Complain if we import a deprecated module or explicitly import deprecated exports
+    -- Complain if we import a deprecated module or
+    -- explicitly import deprecated exports
     whenWOptM Opt_WarnWarningsDeprecations (
        case (mi_warns iface) of
           WarnSome warns -> maybeAddWarnsIfDeprecatedImports imp_details
@@ -383,10 +384,13 @@ rnImportDecl _ (L _ (XImportDecl _)) = panic "rnImportDecl"
 
 
 -- Adds import deprecation warnings if explicitly listed imports are deprecated
-maybeAddWarnsIfDeprecatedImports :: Maybe (Bool, Located [LIE GhcPs]) -> Warnings -> TcRn ()
+maybeAddWarnsIfDeprecatedImports :: Maybe (Bool, Located [LIE GhcPs]) ->
+                                      Warnings -> TcRn ()
 maybeAddWarnsIfDeprecatedImports Nothing _ = return ()
-maybeAddWarnsIfDeprecatedImports (Just(True, _)) _ = return () --hiding, so no warnings
-maybeAddWarnsIfDeprecatedImports (Just(False, L _ imps)) exps = addWarnsIfDeprecatedImports imps exps
+--hiding, so no warnings
+maybeAddWarnsIfDeprecatedImports (Just(True, _)) _ = return ()
+maybeAddWarnsIfDeprecatedImports (Just(False, L _ imps)) exps =
+  addWarnsIfDeprecatedImports imps exps
 
 addWarnsIfDeprecatedImports :: [LIE GhcPs] -> Warnings -> TcRn ()
 addWarnsIfDeprecatedImports [] _ = return ()
@@ -403,8 +407,10 @@ addWarnIfDeprecatedImport _ _ = return ()
 
 occNameMention :: OccName -> [(OccName,WarningTxt)] -> Maybe (OccName,WarningTxt)
 occNameMention _ []  = Nothing
-occNameMention occName0 (mention@(occName1, _):xs) | occName0 == occName1 = Just mention
-                                                   | otherwise = occNameMention occName0 xs
+occNameMention occName0 (mention@(occName1, _):xs) | occName0 == occName1 =
+                                                      Just mention
+                                                   | otherwise =
+                                                      occNameMention occName0 xs
 
 
 -- | Calculate the 'ImportAvails' induced by an import of a particular
@@ -992,7 +998,8 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
                             | otherwise
                             -> []
 
-                renamed_ie = IEThingAll noExt Nothing (L l (replaceWrappedName tc name))
+                renamed_ie = IEThingAll noExt Nothing
+                                        (L l (replaceWrappedName tc name))
                 sub_avails = case avail of
                                Avail {}              -> []
                                AvailTC name2 subs fs -> [(renamed_ie, AvailTC name2 (subs \\ [name]) fs)]
@@ -1061,7 +1068,8 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
 
       where
         mkIEThingAbs tc l (n, av, Nothing    )
-          = (IEThingAbs noExt Nothing (L l (replaceWrappedName tc n)), trimAvail av n)
+          = (IEThingAbs noExt Nothing (L l (replaceWrappedName tc n)),
+                                                                trimAvail av n)
         mkIEThingAbs tc l (n, _,  Just parent)
           = (IEThingAbs noExt Nothing (L l (replaceWrappedName tc n))
              , AvailTC parent [n] [])
@@ -1526,14 +1534,17 @@ printMinimalImports imports_w_usage
                  , x == n
                  , x `elem` xs    -- Note [Partial export]
                  ] of
-           [xs] | all_used xs -> [IEThingAll noExt Nothing (to_ie_post_rn $ noLoc n)]
+           [xs] | all_used xs -> [IEThingAll noExt Nothing
+                                                    (to_ie_post_rn $ noLoc n)]
                 | otherwise   ->
-                   [IEThingWith noExt Nothing (to_ie_post_rn $ noLoc n) NoIEWildcard
+                   [IEThingWith noExt Nothing (to_ie_post_rn $ noLoc n)
+                                                              NoIEWildcard
                                 (map (to_ie_post_rn . noLoc) (filter (/= n) ns))
                                 (map noLoc fs)]
                                           -- Note [Overloaded field import]
            _other | all_non_overloaded fs
-                           -> map (IEVar noExt Nothing . to_ie_post_rn_var . noLoc)
+                           -> map (IEVar noExt Nothing .
+                                            to_ie_post_rn_var . noLoc)
                                 $ ns ++ map flSelector fs
                   | otherwise ->
                       [IEThingWith noExt Nothing (to_ie_post_rn $ noLoc n)

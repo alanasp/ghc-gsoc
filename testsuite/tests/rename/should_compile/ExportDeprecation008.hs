@@ -8,8 +8,8 @@ import ExportDeprecation008_A
 import ExportDeprecation008_B
 
 -- func_C is deprecated at the defining module
--- and module ExportDeprecation008_B but not ExportDeprecation008_A, so we expect
--- only one warning
+-- and module ExportDeprecation008_B but not ExportDeprecation008_A,
+-- so we expect only one warning
 
 main = ExportDeprecation008_B.func_C
 
