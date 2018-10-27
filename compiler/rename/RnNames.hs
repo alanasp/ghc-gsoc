@@ -389,28 +389,18 @@ maybeAddWarnsIfDeprecatedImports :: Maybe (Bool, Located [LIE GhcPs]) ->
 maybeAddWarnsIfDeprecatedImports Nothing _ = return ()
 --hiding, so no warnings
 maybeAddWarnsIfDeprecatedImports (Just(True, _)) _ = return ()
-maybeAddWarnsIfDeprecatedImports (Just(False, L _ imps)) exps =
-  addWarnsIfDeprecatedImports imps exps
-
-addWarnsIfDeprecatedImports :: [LIE GhcPs] -> Warnings -> TcRn ()
-addWarnsIfDeprecatedImports [] _ = return ()
-addWarnsIfDeprecatedImports (imp:imps) warns = do {
-    (addWarnIfDeprecatedImport imp warns)
-  ; (addWarnsIfDeprecatedImports imps warns) }
+maybeAddWarnsIfDeprecatedImports (Just(False, L _ imps)) warns =
+  mapM_ (flip addWarnIfDeprecatedImport warns) imps
 
 addWarnIfDeprecatedImport :: LIE GhcPs -> Warnings -> TcRn ()
-addWarnIfDeprecatedImport (L _ ie) (WarnSome warns)
-  | Just (_, wtxt) <- occNameMention (rdrNameOcc $ ieName ie) warns =
-      addWarn (Reason Opt_WarnWarningsDeprecations) (pprWarningTxtForMsg wtxt)
-  | otherwise = return ()
+addWarnIfDeprecatedImport (L _ ie) (WarnSome warns) = case lookup occ warns of
+    Just txt -> addWarn (Reason Opt_WarnWarningsDeprecations) (mkMsg txt)
+    Nothing -> return ()
+    where
+        occ = rdrNameOcc (ieName ie)
+        mkMsg txt = sep [text "In import of:" <+> quotes (ppr occ),
+                          pprWarningTxtForMsg txt]
 addWarnIfDeprecatedImport _ _ = return ()
-
-occNameMention :: OccName -> [(OccName,WarningTxt)] -> Maybe (OccName,WarningTxt)
-occNameMention _ []  = Nothing
-occNameMention occName0 (mention@(occName1, _):xs) | occName0 == occName1 =
-                                                      Just mention
-                                                   | otherwise =
-                                                      occNameMention occName0 xs
 
 
 -- | Calculate the 'ImportAvails' induced by an import of a particular

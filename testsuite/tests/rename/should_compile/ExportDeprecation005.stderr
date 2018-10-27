@@ -1,5 +1,7 @@
 ExportDeprecation005.hs:7:1: warning: [-Wdeprecations (in -Wdefault)]
+    In import of: ‘func_C’
     Deprecated: "ExportDeprecation005_C shall be imported directly"
 
 ExportDeprecation005.hs:9:1: warning: [-Wdeprecations (in -Wdefault)]
+    In import of: ‘func_C’
     Deprecated: "ExportDeprecation005_C shall be imported directly"

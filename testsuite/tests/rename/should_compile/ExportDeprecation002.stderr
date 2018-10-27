@@ -1,3 +1,2 @@
-
 ExportDeprecation002.hs:7:1: warning: [-Wdeprecations (in -Wdefault)]
-    Deprecated: "func1 export is deprecated"
+    In import of: ‘func1’ Deprecated: "func1 export is deprecated"

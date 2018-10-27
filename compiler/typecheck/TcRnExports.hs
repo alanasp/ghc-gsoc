@@ -42,6 +42,9 @@ import RnHsDoc          ( rnHsDoc )
 import RdrHsSyn        ( setRdrNameSpace )
 import Data.Either      ( partitionEithers )
 
+import Data.List (foldl')
+import Data.Maybe (mapMaybe)
+
 {-
 ************************************************************************
 *                                                                      *
@@ -153,7 +156,8 @@ tcRnExports explicit_mod exports
 
         ; traceRn "rnExports: final_avails:" (ppr final_avails)
 
-        ; let reexp_module_names_wtxts = get_reexp_module_names_wtxts exports
+        ; let reexp_module_names_wtxts = maybe [] get_reexp_module_names_wtxts
+                                                                        exports
 
         ; reexp_module_ifaces_wtxts <- get_reexp_module_ifaces_wtxts
                                           reexp_module_names_wtxts
@@ -177,45 +181,40 @@ tcRnExports explicit_mod exports
         ; return new_tcg_env }
 
 -- Returns Warnings structure from every export in each interface
-get_reexp_warns :: [(ModIface, Maybe WarningTxt)] -> Warnings
-get_reexp_warns ((iface, Just wtxt):xs) =
-  WarnSome (map exp_to_warn (mi_exports iface))
-    `plusWarns` (get_reexp_warns xs)
+get_reexp_warns :: [(ModIface, WarningTxt)] -> Warnings
+get_reexp_warns xs =
+  foldl' plusWarns NoWarnings
+    $ map (\(iface, wtxt) -> WarnSome (map (exp_to_warn wtxt)
+                                            (mi_exports iface))) xs
   where
-    exp_to_warn export = ((nameOccName . availName) export, wtxt)
-get_reexp_warns _ = NoWarnings
+    exp_to_warn wtxt export = ((nameOccName . availName) export, wtxt)
 
 -- Returns interfaces of deprecated reexported modules with their warning
-get_reexp_module_ifaces_wtxts :: [(ModuleName, Maybe WarningTxt)] ->
-                                  RnM [(ModIface, Maybe WarningTxt)]
+get_reexp_module_ifaces_wtxts :: [(ModuleName, WarningTxt)] ->
+                                  RnM [(ModIface, WarningTxt)]
 get_reexp_module_ifaces_wtxts [] = return []
-get_reexp_module_ifaces_wtxts ((_, Nothing):xs) =
-  get_reexp_module_ifaces_wtxts xs
-get_reexp_module_ifaces_wtxts ((mod_name, mayb_wtxt):xs) = do {
+get_reexp_module_ifaces_wtxts ((mod_name, wtxt):xs) = do {
       iface_mayb <- loadSrcInterface_maybe (text "load reexp modules")
                                   mod_name False Nothing
     ; case iface_mayb of
         Succeeded iface -> do {
             ; ifcs_wtxts <- get_reexp_module_ifaces_wtxts xs
-            ; return $ (iface, mayb_wtxt):ifcs_wtxts
+            ; return $ (iface, wtxt):ifcs_wtxts
           }
         Failed _ -> return []
   }
 
 -- Returns a list of reexported module names and warnings
-get_reexp_module_names_wtxts :: Maybe (Located [LIE GhcPs]) ->
-                              [(ModuleName, Maybe WarningTxt)]
-get_reexp_module_names_wtxts Nothing = []
-get_reexp_module_names_wtxts (Just (L _ [])) = []
-get_reexp_module_names_wtxts (Just (L x (lie:lie_tail))) =
-  (get_mod_name_if_reexp lie) ++
-  (get_reexp_module_names_wtxts (Just (L x lie_tail)))
+get_reexp_module_names_wtxts :: Located [LIE GhcPs] ->
+                              [(ModuleName, WarningTxt)]
+get_reexp_module_names_wtxts (L _ lies)
+    = mapMaybe get_mod_name_if_reexp lies
 
--- Returns a singleton list element with reexported module name and warning
-get_mod_name_if_reexp :: LIE GhcPs -> [(ModuleName, Maybe WarningTxt)]
-get_mod_name_if_reexp (L _ (IEModuleContents _ mayb_wtxt loc_mod_name)) =
-  [(unLoc loc_mod_name, mayb_wtxt)]
-get_mod_name_if_reexp _                                             = []
+-- Returns Just (ModuleName, WarningTxt) if argument is reexported module
+get_mod_name_if_reexp :: LIE GhcPs -> Maybe (ModuleName, WarningTxt)
+get_mod_name_if_reexp (L _ (IEModuleContents _ (Just wtxt) loc_mod_name))
+  = Just (unLoc loc_mod_name, wtxt)
+get_mod_name_if_reexp _    = Nothing
 
 
 -- Extracts warnings from a wrapped list of located imports/exports.
