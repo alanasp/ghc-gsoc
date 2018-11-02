@@ -1,0 +1,4 @@
+ExportDeprecation009.hs:5:14: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘b’
+    (imported from ExportDeprecation009_A, but defined in ExportDeprecation009_B):
+    Deprecated: "Import B directly"
