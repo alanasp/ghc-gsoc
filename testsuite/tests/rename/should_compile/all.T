@@ -80,6 +80,7 @@ test('ExportDeprecation007', [extra_files(['ExportDeprecation007_A.hs', 'ExportD
 test('ExportDeprecation008', [extra_files(['ExportDeprecation008_A.hs', 'ExportDeprecation008_B.hs', 'ExportDeprecation008_C.hs'])], multimod_compile, ['ExportDeprecation008', '-v0'])
 test('ExportDeprecation009', [extra_files(['ExportDeprecation009_A.hs', 'ExportDeprecation009_B.hs'])], multimod_compile, ['ExportDeprecation009', '-v0'])
 test('ExportDeprecation010', [extra_files(['ExportDeprecation010_A.hs', 'ExportDeprecation010_B.hs'])], multimod_compile, ['ExportDeprecation010', '-v0'])
+test('ExportDeprecation011', [extra_files(['ExportDeprecation011_A.hs'])], multimod_compile, ['ExportDeprecation011', '-v0'])
 
 
 test('T17a', normal, compile, [''])

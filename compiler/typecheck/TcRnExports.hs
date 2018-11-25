@@ -162,7 +162,10 @@ tcRnExports explicit_mod exports
         ; reexp_module_ifaces_wtxts <- get_reexp_module_ifaces_wtxts
                                           reexp_module_names_wtxts
 
-        ; let mod_reexp_warns = get_reexp_warns reexp_module_ifaces_wtxts
+        ; let mod_reexp_warns = (get_reexp_warns reexp_module_ifaces_wtxts)
+                                      `plusWarns` (warn_all_if_deprec_reexp
+                                        (moduleName this_mod)
+                                        reexp_module_names_wtxts)
 
         ; let export_deprecation_warns = get_export_depr_warns exports
 
@@ -180,6 +183,14 @@ tcRnExports explicit_mod exports
         ; failIfErrsM
         ; return new_tcg_env }
 
+-- Returns WarnAll if given ModuleName is deprecated or NoWarnings otherwise
+warn_all_if_deprec_reexp :: ModuleName -> [(ModuleName, WarningTxt)] -> Warnings
+warn_all_if_deprec_reexp this_mod_name xs =
+  foldl' plusWarns NoWarnings
+    $ map (\(mod_name, wtxt) -> if this_mod_name == mod_name
+                                    then WarnAll wtxt
+                                    else NoWarnings) xs
+
 -- Returns Warnings structure from every export in each interface
 get_reexp_warns :: [(ModIface, WarningTxt)] -> Warnings
 get_reexp_warns xs =
@@ -196,12 +207,10 @@ get_reexp_module_ifaces_wtxts [] = return []
 get_reexp_module_ifaces_wtxts ((mod_name, wtxt):xs) = do {
       iface_mayb <- loadSrcInterface_maybe (text "load reexp modules")
                                   mod_name False Nothing
+    ; ifcs_wtxts <- get_reexp_module_ifaces_wtxts xs
     ; case iface_mayb of
-        Succeeded iface -> do {
-            ; ifcs_wtxts <- get_reexp_module_ifaces_wtxts xs
-            ; return $ (iface, wtxt):ifcs_wtxts
-          }
-        Failed _ -> return []
+        Succeeded iface -> return $ (iface, wtxt):ifcs_wtxts
+        Failed _ -> return ifcs_wtxts
   }
 
 -- Returns a list of reexported module names and warnings

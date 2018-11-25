@@ -1,0 +1,7 @@
+ExportDeprecation011.hs:4:1: warning: [-Wdeprecations (in -Wdefault)]
+    Module ‘ExportDeprecation011_A’ is deprecated:
+      Self export ExportDeprecation011_A is deprecated
+
+ExportDeprecation011.hs:5:14: warning: [-Wdeprecations (in -Wdefault)]
+    In the use of ‘func’ (imported from ExportDeprecation011_A):
+    Deprecated: "Self export ExportDeprecation011_A is deprecated"
