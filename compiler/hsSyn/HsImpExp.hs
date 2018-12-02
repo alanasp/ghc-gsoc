@@ -180,10 +180,10 @@ type LIE pass = Located (IE pass)
 -- For imported entities, this always takes a value of Nothing and the
 -- deprecation fact is deduced from the corresponding ModIface Warnings field.
 data IE pass
-  = IEVar       (XIEVar pass) (Maybe WarningTxt) (LIEWrappedName (IdP pass))
+  = IEVar      (XIEVar pass) (Maybe WarningTxt) (LIEWrappedName (IdP pass))
         -- ^ Imported or Exported Variable
 
-  | IEThingAbs  (XIEThingAbs pass) (Maybe WarningTxt) (LIEWrappedName (IdP pass))
+  | IEThingAbs (XIEThingAbs pass) (Maybe WarningTxt) (LIEWrappedName (IdP pass))
         -- ^ Imported or exported Thing with Absent list
         --
         -- The thing is a Class/Type (can't tell)

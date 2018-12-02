@@ -1033,20 +1033,22 @@ filterImports iface decl_spec (Just (want_hiding, L l import_items))
                case mb_parent of
                  -- non-associated ty/cls
                  Nothing
-                   -> return ([(IEThingWith noExt Nothing (L l name') wc childnames'
-                                                                 childflds,
-                               AvailTC name (name:map unLoc childnames) (map unLoc childflds))],
+                   -> return ([(IEThingWith noExt Nothing (L l name') wc
+                                    childnames' childflds,
+                               AvailTC name (name:map unLoc childnames)
+                                (map unLoc childflds))],
                               [])
                    where name' = replaceWrappedName rdr_tc name
                          childnames' = map to_ie_post_rn childnames
                          -- childnames' = postrn_ies childnames
                  -- associated ty
                  Just parent
-                   -> return ([(IEThingWith noExt Nothing (L l name') wc childnames'
-                                                           childflds,
-                                AvailTC name (map unLoc childnames) (map unLoc childflds)),
-                               (IEThingWith noExt Nothing (L l name') wc childnames'
-                                                           childflds,
+                   -> return ([(IEThingWith noExt Nothing (L l name') wc
+                                  childnames' childflds,
+                                AvailTC name (map unLoc childnames)
+                                  (map unLoc childflds)),
+                               (IEThingWith noExt Nothing (L l name') wc
+                                  childnames' childflds,
                                 AvailTC parent [name] [])],
                               [])
                    where name' = replaceWrappedName rdr_tc name
